@@ -209,13 +209,47 @@ def count_unique_colors(rgb_matrix: np.ndarray) -> int:
     unique_colors = set(map(tuple, flat_pixels))
     
     return len(unique_colors)
-    
+
+def fill_image_gaps(original_matrix: NDArray[np.uint8], d: int = 10) -> NDArray[np.uint8]:
+    height, width, _ = original_matrix.shape
+    for i in range(height):
+        black_row = 0
+        for j in range(width):
+            if ((all(original_matrix[i, j] == np.array([0, 0, 0])))):
+                black_row+=1
+            else:
+                if (black_row<d):
+                    original_matrix = __paint_row_segment(original_matrix,original_matrix[i,j],i,black_row,j-1)
+                black_row = 0
+
+    for j in range(width):
+        black_row = 0
+        for i in range(height):
+            if ((all(original_matrix[i, j] == np.array([0, 0, 0])))):
+                black_row+=1
+            else:
+                if (black_row<d):
+                    original_matrix = __paint_column_segment(original_matrix,original_matrix[i,j],j,black_row,i-1)
+                black_row = 0
+
+    return original_matrix
+
+def __paint_row_segment(original_matrix: NDArray[np.uint8], color: np.ndarray, i:int, d: int, end_point: int) -> NDArray[np.uint8]:
+    for j in range(d):
+        original_matrix[i,end_point-j] = color
+    return original_matrix
+
+def __paint_column_segment(original_matrix: NDArray[np.uint8], color: np.ndarray, j:int, d: int, end_point: int) -> NDArray[np.uint8]:
+    for i in range(d):
+        original_matrix[end_point-i,j] = color
+    return original_matrix
+
 # Abrir la imagen
 sword_image = Image.open("resources/pixel_sword_1024x1024.png").convert("RGB")  # Asegura que sea RGB
-red_potion_image = Image.open("resources/red_potion_1024x1024.png").convert("RGB")  # Asegura que sea RGB
+red_potion_image = Image.open("resources/pocion_roja_ultrarealista.png").convert("RGB")  # Asegura que sea RGB
 
 # Convertir a matriz NumPy
-matriz_1024x1024: NDArray[np.uint8] = np.array(red_potion_image)
+matriz_1024x1024: NDArray[np.uint8] = np.array(sword_image)
 
 matriz_256 = reducir_imagen(matriz_1024x1024, (256, 256))
 
@@ -231,4 +265,5 @@ resultado = eliminar_fondo_por_color(matriz_256, tolerancia=27)
 resultado = unify_sub_matrices_color(resultado,div_factor=128)
 resultado = unify_sub_matrices_color(resultado,div_factor=64)
 resultado = unify_sub_matrices_color(resultado,div_factor=32)
+resultado = fill_image_gaps(resultado)
 Image.fromarray(resultado).show()
