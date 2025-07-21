@@ -3,8 +3,6 @@ from typing import Any, Counter, List, Tuple
 from numpy.typing import NDArray
 from PIL import Image
 import numpy as np
-import heapq
-import cv2
 
 def reducir_imagen(original_matrix: NDArray[np.uint8], nuevo_tamaño: Tuple[int, int])-> NDArray[np.uint8]:
     height, width, rgb = original_matrix.shape
@@ -70,21 +68,6 @@ def matriz_delta(original_matrix: NDArray[np.uint8], threshold = 25) -> NDArray[
                     if(new_rgb[0]+new_rgb[1]+new_rgb[2]>threshold):
                         delta_matrix[i,j] = (0,0,0)
     return delta_matrix
-
-def border_detection(original_matrix: NDArray[np.uint8]) -> NDArray[np.uint8]:
-    # Convertimos a escala de grises primero
-    gray = cv2.cvtColor(original_matrix, cv2.COLOR_RGB2GRAY)
-
-    # Aplicar filtro Sobel en x e y
-    sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
-    sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
-
-    # Magnitud del gradiente
-    magnitude = np.sqrt(sobelx**2 + sobely**2)
-    magnitude = np.clip(magnitude, 0, 255).astype(np.uint8)
-
-    # Si querés volver a RGB
-    return cv2.cvtColor(magnitude, cv2.COLOR_GRAY2RGB)
 
 def show_image(matriz: NDArray[np.uint8]):
     imagen = Image.fromarray(matriz, 'RGB')
