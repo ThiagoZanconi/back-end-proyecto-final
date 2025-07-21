@@ -21,7 +21,7 @@ def reducir_imagen(original_matrix: NDArray[np.uint8], nuevo_tamaño: Tuple[int,
 
     return reduced_matrix
 
-def draw_color_separation_lines(original_matrix: NDArray[np.uint8], n:int = 10) -> NDArray[np.uint8]:
+def draw_color_separation_lines(original_matrix: NDArray[np.uint8], n:int = 6) -> NDArray[np.uint8]:
     height, width, rgb = original_matrix.shape
 
     delta_rows_pq = []
