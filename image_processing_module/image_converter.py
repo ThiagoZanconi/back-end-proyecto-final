@@ -98,7 +98,7 @@ def __closest_color(color: np.ndarray, palette: NDArray[np.float64]) -> NDArray[
     most_similar_value = 1000
     closest_color = palette[0]
     for i in range(len(palette)):
-        delta = deltaE_ciede2000(color,palette[i])
+        delta = ColorUtils.delta_ciede2000(color,palette[i])
         print(delta)
         if(delta < most_similar_value):
             most_similar_value = delta
@@ -140,7 +140,7 @@ def __paint_column_segment(original_matrix: NDArray[np.float64], color: np.ndarr
         original_matrix[end_point-i,j] = color
     return original_matrix
 
-'''
+
 # Abrir la imagen
 sword_image = Image.open("resources/pixel_sword_1024x1024.png").convert("RGB")  # Asegura que sea RGB
 # Convertir a matriz NumPy
@@ -153,13 +153,14 @@ resultado = unify_sub_matrices_color(resultado,div_factor=128)
 resultado = unify_sub_matrices_color(resultado,div_factor=64)
 resultado = blacken_background(resultado)
 resultado = fill_image_gaps(resultado,5)
-'''
 
+
+'''
 resultado = Image.open("resources/pixel_sword_processed.png").convert("RGB")  # Asegura que sea RGB
 resultado: NDArray[np.uint8] = np.array(resultado)
 resultado = ColorUtils.transform_matrix_from_rgb_to_lab(resultado)
 resultado = draw_main_colors(resultado,5)
-
+'''
 
 #resultado = draw_shape(resultado)
 rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(resultado)

@@ -5,7 +5,7 @@ import heapq
 
 class ColorUtils:
 
-    def draw_color_separation_lines(self,original_matrix: NDArray[np.uint8], n:int = 6) -> NDArray[np.uint8]:
+    def draw_color_separation_lines(original_matrix:NDArray[np.float64], n:int = 6) -> NDArray[np.float64]:
         height, width, rgb = original_matrix.shape
 
         delta_rows_pq = []
@@ -15,7 +15,7 @@ class ColorUtils:
         for i in range(height-1):
             delta_sum: float = 0
             for j in range(width):
-                delta_sum += self.cie2000_delta(original_matrix[i,j],original_matrix[i+1,j]) 
+                delta_sum += ColorUtils.delta_ciede2000(original_matrix[i,j],original_matrix[i+1,j]) 
 
             heapq.heappush(delta_rows_pq, (-delta_sum, i))
 
@@ -23,7 +23,7 @@ class ColorUtils:
         for j in range(width-1):
             delta_sum: float = 0
             for i in range(height):
-                delta_sum += self.cie2000_delta(original_matrix[i,j],original_matrix[i,j+1]) 
+                delta_sum += ColorUtils.delta_ciede2000(original_matrix[i,j],original_matrix[i,j+1]) 
 
             heapq.heappush(delta_columns_pq, (-delta_sum, j))
 
