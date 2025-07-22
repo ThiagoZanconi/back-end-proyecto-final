@@ -4,6 +4,8 @@ from numpy.typing import NDArray
 from PIL import Image
 import numpy as np
 
+from color_utils import ColorUtils
+
 def reducir_imagen(original_matrix: NDArray[np.uint8], nuevo_tamaño: Tuple[int, int])-> NDArray[np.uint8]:
     height, width, rgb = original_matrix.shape
     new_height, new_width = nuevo_tamaño
@@ -20,23 +22,23 @@ def reducir_imagen(original_matrix: NDArray[np.uint8], nuevo_tamaño: Tuple[int,
 
     return reduced_matrix
 
-def eliminar_fondo_por_color(original_matrix: NDArray[np.uint8], tolerancia=30):
+def eliminar_fondo_por_color(original_matrix: NDArray[np.float64], tolerancia=30):
+    height, width, rgb = original_matrix.shape
     # Paso 1: tomamos el color del fondo (esquina superior izquierda por ejemplo)
-    rgb = original_matrix[0, 0]  # [R, G, B]
+    fondo_lab = original_matrix[0, 0]  # [R, G, B]
 
     # Paso 2: calculamos distancia a cada píxel
-    diferencia = np.linalg.norm(original_matrix - rgb, axis=2)
+    for i in range(height):
+        for j in range(width):
+            pixel_lab = original_matrix[i, j]
+            diferencia = ColorUtils.delta_ciede2000(fondo_lab, pixel_lab)
+            print(diferencia)
+            if diferencia < tolerancia:
+                original_matrix[i, j] = [0,0,0]
 
-    # Paso 3: creamos una máscara de qué píxeles se parecen al fondo
-    fondo_mask = diferencia < tolerancia
+    return original_matrix
 
-    # Paso 4: aplicamos la máscara para ponerlos en negro
-    matriz_sin_fondo = original_matrix.copy()
-    matriz_sin_fondo[fondo_mask] = [0, 0, 0]
-
-    return matriz_sin_fondo
-
-def unify_sub_matrices_color(original_matrix: NDArray[np.uint8], div_factor = 32) -> NDArray[np.uint8]:
+def unify_sub_matrices_color(original_matrix: NDArray[np.float64], div_factor = 32) -> NDArray[np.float64]:
     height, width, rgb = original_matrix.shape
     sub_matrix_height = height // div_factor
     sub_matrix_width = width // div_factor
@@ -55,39 +57,9 @@ def unify_sub_matrices_color(original_matrix: NDArray[np.uint8], div_factor = 32
 
     return original_matrix
 
-#Matriz donde en la celda i,j tiene una terna con la diferencia de la matriz i,j y la matriz i+1,j+1
-def matriz_delta(original_matrix: NDArray[np.uint8], threshold = 25) -> NDArray[np.uint8]:
-    height, width, rgb = original_matrix.shape
-    delta_matrix = np.zeros((height, width, rgb), dtype=np.uint8)
-    for i in range(1,height-1):
-        for j in range(1,width-1):
-            delta_matrix[i,j] = (255,255,255)
-            for a in range(i-1,i+1):
-                for b in range (j-1,j+1):
-                    new_rgb = np.abs(original_matrix[i,j] - original_matrix[a,b]).astype(np.uint8)
-                    if(new_rgb[0]+new_rgb[1]+new_rgb[2]>threshold):
-                        delta_matrix[i,j] = (0,0,0)
-    return delta_matrix
-
 def show_image(matriz: NDArray[np.uint8]):
     imagen = Image.fromarray(matriz, 'RGB')
     imagen.show()  # o .save("salida.jpg")
-
-def whiten_matrix(original_matrix: NDArray[np.uint8]) -> NDArray[np.uint8]:
-    block_size = 32
-    for a in range(8):
-        for b in range(8):
-            white_pixels = 0
-            for i in range(a*block_size,(a+1)*block_size):
-                for j in range(b*block_size,(b+1)*block_size):
-                    if(original_matrix[i,j,0] != 0):
-                        white_pixels+=1
-            if(white_pixels>160):
-                for i in range(a*block_size,(a+1)*block_size):
-                    for j in range(b*block_size,(b+1)*block_size):
-                        original_matrix[i,j] = (255,255,255)
-
-    return original_matrix
 
 def draw_main_colors(original_matrix: NDArray[np.uint8])-> NDArray[np.uint8]:
     height, width, _ = original_matrix.shape
@@ -236,6 +208,8 @@ matriz_1024x1024: NDArray[np.uint8] = np.array(sword_image)
 
 matriz_256 = reducir_imagen(matriz_1024x1024, (256, 256))
 
+lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(matriz_256)
+
 #resultado = draw_main_colors(matriz_256)
 
 #resultado = draw_main_colors_v2(matriz_256)
@@ -244,9 +218,11 @@ matriz_256 = reducir_imagen(matriz_1024x1024, (256, 256))
 
 #resultado = whiten_matrix(matriz_256)
 
-resultado = eliminar_fondo_por_color(matriz_256, tolerancia=27)
+resultado = eliminar_fondo_por_color(matriz_256, tolerancia=70)
+
 resultado = unify_sub_matrices_color(resultado,div_factor=128)
-resultado = unify_sub_matrices_color(resultado,div_factor=64)
-resultado = unify_sub_matrices_color(resultado,div_factor=32)
+#resultado = unify_sub_matrices_color(resultado,div_factor=64)
+#resultado = unify_sub_matrices_color(resultado,div_factor=32)
 resultado = fill_image_gaps(resultado)
+
 Image.fromarray(resultado).show()
