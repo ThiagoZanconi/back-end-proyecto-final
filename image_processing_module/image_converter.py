@@ -1,10 +1,8 @@
-import math
-from typing import Any, Counter, List, Tuple
+from typing import Any, Counter, Tuple
 from numpy.typing import NDArray
 from PIL import Image
 import numpy as np
 from skimage.color import deltaE_ciede2000
-
 from color_utils import ColorUtils
 
 def reducir_imagen(original_matrix: NDArray[np.uint8], nuevo_tamaño: Tuple[int, int])-> NDArray[np.uint8]:
@@ -60,10 +58,23 @@ def unify_sub_matrices_color(original_matrix: NDArray[np.float64], div_factor = 
 
     return original_matrix
 
-def draw_main_colors(original_matrix: NDArray[np.float64]) -> NDArray[np.float64]:
+def blacken_background(original_matrix: NDArray[np.float64]) -> NDArray[np.float64]:
+    height, width, rgb = original_matrix.shape
+    counter = Counter()
+    for i in range(height):
+        for j in range(width):
+            counter[tuple(original_matrix[i,j])]+=1
+    most_common = counter.most_common(1)[0][0]
+    for i in range(height):
+        for j in range(width):
+            if(tuple(original_matrix[i,j]) == most_common):
+                original_matrix[i, j] = [0,0,0]
+    return original_matrix
+
+def draw_main_colors(original_matrix: NDArray[np.float64], n = 10) -> NDArray[np.float64]:
     height, width, _ = original_matrix.shape
     unique_colors = np.unique(original_matrix.reshape(-1, 3), axis=0)
-    most_diff = __get_most_different_colors(unique_colors)
+    most_diff = __get_most_different_colors(unique_colors, n)
     for i in range(height):
         for j in range(width):
             original_matrix[i, j] = __closest_color(original_matrix[i, j], most_diff)
@@ -105,7 +116,7 @@ def fill_image_gaps(original_matrix: NDArray[np.float64], d: int = 10) -> NDArra
     for i in range(height):
         black_row = 0
         for j in range(width):
-            if np.allclose(original_matrix[i, j], [0.0, 0.0, 0.0], atol=1e-5):
+            if np.array_equal(original_matrix[i, j], [0.0, 0.0, 0.0]):
                 black_row += 1
             else:
                 if black_row < d and black_row > 0:
@@ -115,7 +126,7 @@ def fill_image_gaps(original_matrix: NDArray[np.float64], d: int = 10) -> NDArra
     for j in range(width):
         black_row = 0
         for i in range(height):
-            if np.allclose(original_matrix[i, j], [0.0, 0.0, 0.0], atol=1e-5):
+            if np.array_equal(original_matrix[i, j], [0.0, 0.0, 0.0]):
                 black_row += 1
             else:
                 if black_row < d and black_row > 0:
@@ -146,13 +157,13 @@ matriz_128 = reducir_imagen(matriz_1024x1024, (128, 128))
 
 lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(matriz_128)
 
-resultado = draw_main_colors(lab_matrix)
+resultado = draw_main_colors(lab_matrix,16)
 
 #resultado = eliminar_fondo_por_color(lab_matrix, tolerancia=20)
 
 resultado = unify_sub_matrices_color(resultado,div_factor=128)
 resultado = unify_sub_matrices_color(resultado,div_factor=64)
-#resultado = unify_sub_matrices_color(resultado,div_factor=32)
-resultado = fill_image_gaps(resultado)
+resultado = blacken_background(resultado)
+resultado = fill_image_gaps(resultado,5)
 rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(resultado)
 Image.fromarray(rgb_matrix).show()
