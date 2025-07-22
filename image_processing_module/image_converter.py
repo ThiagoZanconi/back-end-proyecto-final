@@ -158,9 +158,9 @@ resultado = fill_image_gaps(resultado,5)
 resultado = Image.open("resources/pixel_sword_processed.png").convert("RGB")  # Asegura que sea RGB
 resultado: NDArray[np.uint8] = np.array(resultado)
 resultado = ColorUtils.transform_matrix_from_rgb_to_lab(resultado)
+resultado = draw_main_colors(resultado,5)
 
 
-
-resultado = draw_shape(resultado)
+#resultado = draw_shape(resultado)
 rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(resultado)
 Image.fromarray(rgb_matrix).show()
