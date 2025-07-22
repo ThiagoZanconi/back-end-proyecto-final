@@ -21,22 +21,6 @@ def reducir_imagen(original_matrix: NDArray[np.uint8], nuevo_tamaño: Tuple[int,
 
     return reduced_matrix
 
-def eliminar_fondo_por_color(original_matrix: NDArray[np.float64], tolerancia=30):
-    height, width, rgb = original_matrix.shape
-    # Paso 1: tomamos el color del fondo (esquina superior izquierda por ejemplo)
-    fondo_lab = original_matrix[0, 0]  # [R, G, B]
-
-    # Paso 2: calculamos distancia a cada píxel
-    for i in range(height):
-        for j in range(width):
-            pixel_lab = original_matrix[i, j]
-            diferencia = ColorUtils.delta_ciede2000(fondo_lab, pixel_lab)
-            print(diferencia)
-            if diferencia < tolerancia:
-                original_matrix[i, j] = [0,0,0]
-
-    return original_matrix
-
 def unify_sub_matrices_color(original_matrix: NDArray[np.float64], div_factor = 32) -> NDArray[np.float64]:
     height, width, rgb = original_matrix.shape
     sub_matrix_height = height // div_factor
@@ -70,6 +54,17 @@ def blacken_background(original_matrix: NDArray[np.float64]) -> NDArray[np.float
             if(tuple(original_matrix[i,j]) == most_common):
                 original_matrix[i, j] = [0,0,0]
     return original_matrix
+
+def draw_shape(original_matrix: NDArray[np.float64]) -> NDArray[np.float64]:
+    height, width, rgb = original_matrix.shape
+    shape_matrix = np.zeros((height, width, 3), dtype=np.float64)
+    for i in range(1,height-1):
+        for j in range(1,width-1):
+            if(tuple(original_matrix[i,j])!= (0,0,0) and (tuple(original_matrix[i,j-1]) == (0,0,0) or tuple(original_matrix[i,j+1]) == (0,0,0) or tuple(original_matrix[i-1,j]) == (0,0,0) or tuple(original_matrix[i+1,j]) == (0,0,0))):
+                shape_matrix[i,j] = [100,0,0]
+            else:
+                shape_matrix[i,j] = [0,0,0]
+    return shape_matrix
 
 def draw_main_colors(original_matrix: NDArray[np.float64], n = 10) -> NDArray[np.float64]:
     height, width, _ = original_matrix.shape
@@ -145,25 +140,27 @@ def __paint_column_segment(original_matrix: NDArray[np.float64], color: np.ndarr
         original_matrix[end_point-i,j] = color
     return original_matrix
 
+'''
 # Abrir la imagen
 sword_image = Image.open("resources/pixel_sword_1024x1024.png").convert("RGB")  # Asegura que sea RGB
-red_potion_image = Image.open("resources/pocion_roja_ultrarealista.png").convert("RGB")  # Asegura que sea RGB
-
 # Convertir a matriz NumPy
 matriz_1024x1024: NDArray[np.uint8] = np.array(sword_image)
-
 matriz_256 = reducir_imagen(matriz_1024x1024, (256, 256))
 matriz_128 = reducir_imagen(matriz_1024x1024, (128, 128))
-
 lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(matriz_128)
-
 resultado = draw_main_colors(lab_matrix,16)
-
-#resultado = eliminar_fondo_por_color(lab_matrix, tolerancia=20)
-
 resultado = unify_sub_matrices_color(resultado,div_factor=128)
 resultado = unify_sub_matrices_color(resultado,div_factor=64)
 resultado = blacken_background(resultado)
 resultado = fill_image_gaps(resultado,5)
+'''
+
+resultado = Image.open("resources/pixel_sword_processed.png").convert("RGB")  # Asegura que sea RGB
+resultado: NDArray[np.uint8] = np.array(resultado)
+resultado = ColorUtils.transform_matrix_from_rgb_to_lab(resultado)
+
+
+
+resultado = draw_shape(resultado)
 rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(resultado)
 Image.fromarray(rgb_matrix).show()
