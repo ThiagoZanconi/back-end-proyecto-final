@@ -48,6 +48,8 @@ def unify_sub_matrices_color(original_matrix: NDArray[np.float64], div_factor = 
             counter = Counter()
             for a in range(sub_matrix_height*i,sub_matrix_height*(i+1)):
                 for b in range(sub_matrix_width*j,sub_matrix_width*(j+1)):
+                    if(tuple(original_matrix[a,b])!=(0,0,0)):
+                        print(tuple(original_matrix[a,b]))
                     counter[tuple(original_matrix[a,b])]+=1
 
             most_common = counter.most_common(1)[0][0]
@@ -165,36 +167,36 @@ def count_unique_colors(rgb_matrix: np.ndarray) -> int:
     
     return len(unique_colors)
 
-def fill_image_gaps(original_matrix: NDArray[np.uint8], d: int = 10) -> NDArray[np.uint8]:
+def fill_image_gaps(original_matrix: NDArray[np.float64], d: int = 10) -> NDArray[np.float64]:
     height, width, _ = original_matrix.shape
     for i in range(height):
         black_row = 0
         for j in range(width):
-            if ((all(original_matrix[i, j] == np.array([0, 0, 0])))):
-                black_row+=1
+            if np.allclose(original_matrix[i, j], [0.0, 0.0, 0.0], atol=1e-5):
+                black_row += 1
             else:
-                if (black_row<d):
-                    original_matrix = __paint_row_segment(original_matrix,original_matrix[i,j],i,black_row,j-1)
+                if black_row < d and black_row > 0:
+                    original_matrix = __paint_row_segment(original_matrix, original_matrix[i, j], i, black_row, j - 1)
                 black_row = 0
 
     for j in range(width):
         black_row = 0
         for i in range(height):
-            if ((all(original_matrix[i, j] == np.array([0, 0, 0])))):
-                black_row+=1
+            if np.allclose(original_matrix[i, j], [0.0, 0.0, 0.0], atol=1e-5):
+                black_row += 1
             else:
-                if (black_row<d):
-                    original_matrix = __paint_column_segment(original_matrix,original_matrix[i,j],j,black_row,i-1)
+                if black_row < d and black_row > 0:
+                    original_matrix = __paint_column_segment(original_matrix, original_matrix[i, j], j, black_row, i - 1)
                 black_row = 0
 
     return original_matrix
 
-def __paint_row_segment(original_matrix: NDArray[np.uint8], color: np.ndarray, i:int, d: int, end_point: int) -> NDArray[np.uint8]:
+def __paint_row_segment(original_matrix: NDArray[np.float64], color: np.ndarray, i:int, d: int, end_point: int) -> NDArray[np.uint8]:
     for j in range(d):
         original_matrix[i,end_point-j] = color
     return original_matrix
 
-def __paint_column_segment(original_matrix: NDArray[np.uint8], color: np.ndarray, j:int, d: int, end_point: int) -> NDArray[np.uint8]:
+def __paint_column_segment(original_matrix: NDArray[np.float64], color: np.ndarray, j:int, d: int, end_point: int) -> NDArray[np.uint8]:
     for i in range(d):
         original_matrix[end_point-i,j] = color
     return original_matrix
@@ -218,11 +220,11 @@ lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(matriz_256)
 
 #resultado = whiten_matrix(matriz_256)
 
-resultado = eliminar_fondo_por_color(matriz_256, tolerancia=70)
+resultado = eliminar_fondo_por_color(lab_matrix, tolerancia=20)
 
 resultado = unify_sub_matrices_color(resultado,div_factor=128)
 #resultado = unify_sub_matrices_color(resultado,div_factor=64)
 #resultado = unify_sub_matrices_color(resultado,div_factor=32)
 resultado = fill_image_gaps(resultado)
-
-Image.fromarray(resultado).show()
+rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(resultado)
+Image.fromarray(rgb_matrix).show()

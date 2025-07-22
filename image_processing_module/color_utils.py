@@ -1,7 +1,6 @@
-from typing import Any
 import numpy as np
 from numpy.typing import NDArray
-from skimage.color import rgb2lab
+from skimage.color import rgb2lab,lab2rgb
 import heapq
 
 class ColorUtils:
@@ -49,6 +48,15 @@ class ColorUtils:
         # Convertir toda la matriz de una vez (vectorizado)
         lab_matrix: NDArray[np.float64] = rgb2lab(rgb_normalized)
         return lab_matrix
+    
+    def transform_matrix_from_lab_lo_rgb(original_matrix:NDArray[np.float64]) -> NDArray[np.uint8]:
+        # Convertir de Lab a RGB (valores en [0, 1])
+        rgb_normalized = lab2rgb(original_matrix)
+
+        # Escalar a [0, 255] y convertir a uint8
+        rgb_uint8 = (rgb_normalized * 255).clip(0, 255).astype(np.uint8)
+
+        return rgb_uint8
 
     @staticmethod
     def delta_ciede2000(lab1, lab2) -> float:
