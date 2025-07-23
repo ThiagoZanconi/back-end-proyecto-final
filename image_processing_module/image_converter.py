@@ -3,6 +3,7 @@ from numpy.typing import NDArray
 from PIL import Image
 import numpy as np
 from color_utils import ColorUtils
+from matrix_color_service import MatrixColorService
 from shape_finder import ShapeFinder
 
 def reducir_imagen(original_matrix: NDArray[np.uint8], nuevo_tamaño: Tuple[int, int])-> NDArray[np.uint8]:
@@ -156,14 +157,24 @@ resultado = fill_image_gaps(resultado,5)
 '''
 
 
-
+'''
 resultado = Image.open("resources/pixel_sword_processed.png").convert("RGB")  # Asegura que sea RGB
 resultado: NDArray[np.uint8] = np.array(resultado)
 resultado = ColorUtils.transform_matrix_from_rgb_to_lab(resultado)
 #resultado = draw_shape(resultado)
 resultado = draw_main_colors(resultado,4)
 resultado = ShapeFinder.find_shape(resultado,5)
+'''
 
+
+sword_image = Image.open("resources/red_potion_1024x1024.png").convert("RGB")  # Asegura que sea RGB
+# Convertir a matriz NumPy
+matriz_1024x1024: NDArray[np.uint8] = np.array(sword_image)
+matriz_256 = reducir_imagen(matriz_1024x1024, (256, 256))
+matriz_128 = reducir_imagen(matriz_1024x1024, (128, 128))
+lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(matriz_128)
+matrix_color_service = MatrixColorService(lab_matrix)
+resultado = matrix_color_service.paint_main_colors()
 
 rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(resultado)
 Image.fromarray(rgb_matrix).show()
