@@ -1,3 +1,4 @@
+from typing import Tuple
 import numpy as np
 from numpy.typing import NDArray
 from skimage.color import rgb2lab,lab2rgb
@@ -5,7 +6,7 @@ import heapq
 
 class ColorUtils:
 
-    def draw_color_separation_lines(original_matrix:NDArray[np.float64], n:int = 6) -> NDArray[np.float64]:
+    def draw_color_separation_lines(original_matrix:NDArray[np.float64], n:int = 4) -> NDArray[np.float64]:
         height, width, rgb = original_matrix.shape
 
         delta_rows_pq = []
@@ -40,6 +41,33 @@ class ColorUtils:
                 original_matrix[i,j] = [0,0,0]
 
         return original_matrix
+    
+    def get_starting_point(original_matrix:NDArray[np.float64]) -> Tuple[int,int]:
+        height, width, rgb = original_matrix.shape
+
+        delta_rows_pq = []
+        delta_columns_pq = []
+
+        #Compare rows
+        for i in range(height-1):
+            delta_sum: float = 0
+            for j in range(width):
+                delta_sum += ColorUtils.delta_ciede2000(original_matrix[i,j],original_matrix[i+1,j]) 
+
+            heapq.heappush(delta_rows_pq, (-delta_sum, i))
+
+        #Compare columns
+        for j in range(width-1):
+            delta_sum: float = 0
+            for i in range(height):
+                delta_sum += ColorUtils.delta_ciede2000(original_matrix[i,j],original_matrix[i,j+1]) 
+
+            heapq.heappush(delta_columns_pq, (-delta_sum, j))
+
+        i = heapq.heappop(delta_rows_pq)[1]
+        j = heapq.heappop(delta_columns_pq)[1]
+
+        return (i,j)
 
     @staticmethod
     def transform_matrix_from_rgb_to_lab(original_matrix: NDArray[np.uint8]) -> NDArray[np.float64]:

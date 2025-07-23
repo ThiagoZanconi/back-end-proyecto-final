@@ -2,8 +2,8 @@ from typing import Any, Counter, Tuple
 from numpy.typing import NDArray
 from PIL import Image
 import numpy as np
-from skimage.color import deltaE_ciede2000
 from color_utils import ColorUtils
+from shape_finder import ShapeFinder
 
 def reducir_imagen(original_matrix: NDArray[np.uint8], nuevo_tamaño: Tuple[int, int])-> NDArray[np.uint8]:
     height, width, rgb = original_matrix.shape
@@ -80,15 +80,15 @@ def __get_most_different_colors(lab_colors: NDArray[np.float64], n: int = 10) ->
     selected = [lab_colors[0]]  # Empezamos con un color arbitrario (el primero)
     remaining = lab_colors[1:]
 
-    for _ in range(1, n):
-        # Calcular la mínima distancia de cada color restante al conjunto ya seleccionado
-        distances = np.array([
-            np.min(deltaE_ciede2000(np.tile(color[None, :], (len(selected), 1)), np.array(selected)))
-            for color in remaining
-        ])
-
-        # Elegir el color con mayor distancia mínima
-        idx_max = np.argmax(distances)
+    for _ in range(n):
+        max_delta = 0
+        idx_max = 0
+        for i in range(len(remaining)):
+            current_delta = min(ColorUtils.delta_ciede2000(remaining[i], s) for s in selected)
+            if(current_delta>max_delta):
+                max_delta = current_delta
+                idx_max = i
+                
         selected.append(remaining[idx_max])
         remaining = np.delete(remaining, idx_max, axis=0)
 
@@ -140,7 +140,7 @@ def __paint_column_segment(original_matrix: NDArray[np.float64], color: np.ndarr
         original_matrix[end_point-i,j] = color
     return original_matrix
 
-
+'''
 # Abrir la imagen
 sword_image = Image.open("resources/pixel_sword_1024x1024.png").convert("RGB")  # Asegura que sea RGB
 # Convertir a matriz NumPy
@@ -153,15 +153,17 @@ resultado = unify_sub_matrices_color(resultado,div_factor=128)
 resultado = unify_sub_matrices_color(resultado,div_factor=64)
 resultado = blacken_background(resultado)
 resultado = fill_image_gaps(resultado,5)
-
-
 '''
+
+
+
 resultado = Image.open("resources/pixel_sword_processed.png").convert("RGB")  # Asegura que sea RGB
 resultado: NDArray[np.uint8] = np.array(resultado)
 resultado = ColorUtils.transform_matrix_from_rgb_to_lab(resultado)
-resultado = draw_main_colors(resultado,5)
-'''
-
 #resultado = draw_shape(resultado)
+resultado = draw_main_colors(resultado,4)
+resultado = ShapeFinder.find_shape(resultado,5)
+
+
 rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(resultado)
 Image.fromarray(rgb_matrix).show()
