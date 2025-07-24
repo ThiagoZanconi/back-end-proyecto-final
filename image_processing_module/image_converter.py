@@ -168,15 +168,13 @@ resultado = ShapeFinder.find_shape(resultado,5)
 '''
 
 
-sword_image = Image.open("resources/red_potion_1024x1024.png").convert("RGB")  # Asegura que sea RGB
+sword_image = Image.open("resources/pocion_roja_ultrarealista.png").convert("RGB")  # Asegura que sea RGB
 # Convertir a matriz NumPy
 matriz_1024x1024: NDArray[np.uint8] = np.array(sword_image)
-matriz_256 = reducir_imagen(matriz_1024x1024, (256, 256))
 matriz_128 = reducir_imagen(matriz_1024x1024, (128, 128))
 lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(matriz_128)
 matrix_color_service = MatrixColorService(lab_matrix)
 resultado = matrix_color_service.expansion()
-
 
 
 rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(resultado)

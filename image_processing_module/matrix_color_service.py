@@ -109,7 +109,7 @@ class MatrixColorService:
     caso contrario crea su propio conjunto.
     '''
     
-    def expansion(self, n = 10, delta_threshold = 20) -> NDArray[np.float64]:
+    def expansion(self, n = 500, delta_threshold = 60) -> NDArray[np.float64]:
         return_matrix: NDArray[np.float64] = np.zeros_like(self.matrix)
         visited_matrix: np.ndarray = np.full((self.height, self.width), False, dtype=bool)
         index_set_matrix: np.ndarray = np.full((self.height, self.width), -1, dtype=int)
@@ -124,7 +124,7 @@ class MatrixColorService:
         self.__expand((0,0),(1,0),visited_matrix,index_set_matrix,color_set_list,delta_threshold)
         self.__expand((0,0),(0,1),visited_matrix,index_set_matrix,color_set_list,delta_threshold)
 
-        color_set_list.sort(key=lambda x: len(x.par), reverse=True)
+        color_set_list.sort(key=lambda x: len(x.set), reverse=True)
         #Obtenemos los primeros n conjuntos y restantes
         first_sets = color_set_list[:n]
         last_sets = color_set_list[n:]
@@ -134,11 +134,13 @@ class MatrixColorService:
         for par in first_sets:
             for tuple in par.set:
                 return_matrix[tuple[0],tuple[1]] = par.color
-                available_colors.append(par.color)
+            available_colors.append(par.color)
 
+        #Mejorar para que se haga expansion sobre este conjunto de colores
         #Transforma cada color de los ultimos conjuntos en uno de los average de los primeros n conjuntos
         for par in first_sets:
             for tuple in par.set:
+                print("Transforming")
                 return_matrix[tuple[0],tuple[1]] = min(available_colors, key=lambda color: ColorUtils.delta_ciede2000(self.matrix[tuple[0],tuple[1]], color))
 
         return return_matrix
@@ -149,33 +151,37 @@ class MatrixColorService:
         if ( i<self.height and j<self.width ):
             prev_set_index:int = index_set_matrix[prev[0],prev[1]]
             prev_par_set_color = color_set_list[prev_set_index]
-            average_color_prev_set = color_set_list[prev_set_index].color
-            delta: float = ColorUtils.delta_ciede2000(average_color_prev_set, self.matrix[i,j])
-            
+            average_color_prev_set = prev_par_set_color.color
+            prev_delta: float = ColorUtils.delta_ciede2000(average_color_prev_set, self.matrix[i,j])
+            print(prev_delta)
             #Mejor delta, hay que insertar en el conjunto anterior
-            if(delta<delta_threshold):
-                #Este nodo ya fue visitado, hay que eliminarlo del conjunto donde esta
-                if (visited_matrix[i,j]):
-                    set_index = index_set_matrix[i,j]
-                    par_set_color = color_set_list[set_index]
+
+            if (not visited_matrix[i,j]):
+                #Primera vez visitado y el delta cumple
+                if(prev_delta<delta_threshold):  
+                    index_set_matrix[i,j] = prev_set_index
+                    self.__add_color_to_set(prev_par_set_color,(i,j))
+                #Primera vez visitado y el delta no cumple
+                else:
+                    color_set_list.append(ParSetColor({(i,j)},self.matrix[i,j]))
+                    index_set_matrix[i,j] = len(color_set_list) - 1
+
+                visited_matrix[i,j] = True
+                self.__expand((i,j),(i+1,j),visited_matrix,index_set_matrix,color_set_list,delta_threshold)
+                self.__expand((i,j),(i,j+1),visited_matrix,index_set_matrix,color_set_list,delta_threshold)
+
+            else:
+                set_index = index_set_matrix[i,j]
+                par_set_color: ParSetColor = color_set_list[set_index]
+                actual_delta = ColorUtils.delta_ciede2000(par_set_color.color, self.matrix[i,j])
+                #Habia sido visitado y el delta cumple. Si el color actual estaba solo en un conjunto y el delta cumple se mueve de conjunto.
+                if(prev_delta<delta_threshold and (len(par_set_color.set) == 1 or prev_delta < actual_delta)):
                     self.__delete_color_from_set(par_set_color, (i,j))
-                
-                index_set_matrix[i,j] = prev_set_index
-                self.__add_color_to_set(prev_par_set_color,(i,j))
-                visited_matrix[i,j] = True
-                self.__expand((i,j),(i+1,j),visited_matrix,index_set_matrix,color_set_list,delta_threshold)
-                self.__expand((i,j),(i,j+1),visited_matrix,index_set_matrix,color_set_list,delta_threshold)
 
-            #Si no habia sido visitado, crea su propio conjunto y se expande 
-            elif (not visited_matrix[i,j]):
-                visited_matrix[i,j] = True
-
-                color_set_list.append(ParSetColor({(i,j)},self.matrix[i,j]))
-                visited_matrix[i,j] = True
-                index_set_matrix[i,j] = len(color_set_list) - 1
-
-                self.__expand((i,j),(i+1,j),visited_matrix,index_set_matrix,color_set_list,delta_threshold)
-                self.__expand((i,j),(i,j+1),visited_matrix,index_set_matrix,color_set_list,delta_threshold)
+                    index_set_matrix[i,j] = prev_set_index
+                    self.__add_color_to_set(prev_par_set_color,(i,j))
+                    self.__expand((i,j),(i+1,j),visited_matrix,index_set_matrix,color_set_list,delta_threshold)
+                    self.__expand((i,j),(i,j+1),visited_matrix,index_set_matrix,color_set_list,delta_threshold)
 
     def __add_color_to_set(self, par: ParSetColor, p: Tuple[int,int]):
         new_color = self.matrix[p[0],p[1]]
