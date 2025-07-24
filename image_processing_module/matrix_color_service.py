@@ -15,6 +15,8 @@ class MatrixColorService:
     matrix: NDArray[np.float64]
     height: int
     width: int
+    c1 = 1
+    c2 = 1
 
     # Contador para todos los colores
     __color_counter =  Counter()
@@ -110,7 +112,6 @@ class MatrixColorService:
     '''
     
     def expansion(self, n = 500, delta_threshold = 60) -> NDArray[np.float64]:
-        return_matrix: NDArray[np.float64] = np.zeros_like(self.matrix)
         visited_matrix: np.ndarray = np.full((self.height, self.width), False, dtype=bool)
         index_set_matrix: np.ndarray = np.full((self.height, self.width), -1, dtype=int)
         #Lista de pares conjunto de colores y color promedio.
@@ -133,17 +134,44 @@ class MatrixColorService:
         #Transforma cada color de los primeros n conjuntos al average correspondiente de su conjunto
         for par in first_sets:
             for tuple in par.set:
-                return_matrix[tuple[0],tuple[1]] = par.color
+                self.matrix[tuple[0],tuple[1]] = par.color
             available_colors.append(par.color)
 
         #Mejorar para que se haga expansion sobre este conjunto de colores
         #Transforma cada color de los ultimos conjuntos en uno de los average de los primeros n conjuntos
+        for par in last_sets:
+            for tuple in par.set:
+                self.matrix[tuple[0],tuple[1]] = min(available_colors, key=lambda color: ColorUtils.delta_ciede2000(self.matrix[tuple[0],tuple[1]], color))
+
+        return self.matrix
+    
+    def expansion_v2(self, n = 100, delta_threshold_start = 60) -> NDArray[np.float64]:
+        if self.matrix.shape[-1] != 3:
+            raise ValueError("Matriz de color inválida: no tiene 3 canales (L,a,b)")
+        visited_matrix: np.ndarray = np.full((self.height, self.width), False, dtype=bool)
+        index_set_matrix: np.ndarray = np.full((self.height, self.width), -1, dtype=int)
+        #Lista de pares conjunto de colores y color promedio.
+        color_set_list: List[ParSetColor] = []
+
+        #Caso base
+        par: ParSetColor = ParSetColor({(0,0)},self.matrix[0,0])
+        color_set_list.append(par)
+        visited_matrix[0,0] = True
+        index_set_matrix[0,0] = 0
+        self.__expand((0,0),(1,0),visited_matrix,index_set_matrix,color_set_list,delta_threshold_start)
+        self.__expand((0,0),(0,1),visited_matrix,index_set_matrix,color_set_list,delta_threshold_start)
+        first_sets = color_set_list[:n]
+
+        #Transforma cada color de los primeros n conjuntos al average correspondiente de su conjunto
         for par in first_sets:
             for tuple in par.set:
-                print("Transforming")
-                return_matrix[tuple[0],tuple[1]] = min(available_colors, key=lambda color: ColorUtils.delta_ciede2000(self.matrix[tuple[0],tuple[1]], color))
+                self.matrix[tuple[0],tuple[1]] = par.color
 
-        return return_matrix
+        print("Set size: ",len(color_set_list))
+        if(len(color_set_list)>n):
+            self.expansion_v2(n,delta_threshold_start+0.5)
+
+        return self.matrix
 
     def __expand(self, prev: Tuple[int,int], p: Tuple[int,int], visited_matrix: np.ndarray, index_set_matrix: np.ndarray, color_set_list: List[ParSetColor], delta_threshold = 20):
         i:int = p[0]
@@ -153,7 +181,6 @@ class MatrixColorService:
             prev_par_set_color = color_set_list[prev_set_index]
             average_color_prev_set = prev_par_set_color.color
             prev_delta: float = ColorUtils.delta_ciede2000(average_color_prev_set, self.matrix[i,j])
-            print(prev_delta)
             #Mejor delta, hay que insertar en el conjunto anterior
 
             if (not visited_matrix[i,j]):
