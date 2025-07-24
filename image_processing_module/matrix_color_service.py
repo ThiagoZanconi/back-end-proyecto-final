@@ -1,9 +1,15 @@
 from collections import Counter
+from dataclasses import dataclass
 from typing import List, Tuple
 from numpy.typing import NDArray
 import numpy as np
 
 from color_utils import ColorUtils
+
+@dataclass
+class ParSetColor:
+    set: set[Tuple[int,int]]
+    color: np.ndarray
 
 class MatrixColorService:
     matrix: NDArray[np.float64]
@@ -108,41 +114,42 @@ class MatrixColorService:
         visited_matrix: np.ndarray = np.full((self.height, self.width), False, dtype=bool)
         index_set_matrix: np.ndarray = np.full((self.height, self.width), -1, dtype=int)
         #Lista de pares conjunto de colores y color promedio.
-        color_set_list: List[Tuple[set[Tuple[int,int]],np.ndarray]] = []
+        color_set_list: List[ParSetColor] = []
 
         #Caso base
-        color_set_list.append(({(0,0)}, self.matrix[0,0]))
+        par: ParSetColor = ParSetColor({(0,0)},self.matrix[0,0])
+        color_set_list.append(par)
         visited_matrix[0,0] = True
         index_set_matrix[0,0] = 0
         self.__expand((0,0),(1,0),visited_matrix,index_set_matrix,color_set_list,delta_threshold)
         self.__expand((0,0),(0,1),visited_matrix,index_set_matrix,color_set_list,delta_threshold)
 
-        color_set_list.sort(key=lambda x: len(x[0]), reverse=True)
+        color_set_list.sort(key=lambda x: len(x.par), reverse=True)
         #Obtenemos los primeros n conjuntos y restantes
         first_sets = color_set_list[:n]
         last_sets = color_set_list[n:]
 
         available_colors = []
         #Transforma cada color de los primeros n conjuntos al average correspondiente de su conjunto
-        for tuple_set_average in first_sets:
-            for tuple in tuple_set_average[0]:
-                return_matrix[tuple[0],tuple[1]] = tuple_set_average[1]
-                available_colors.append(tuple_set_average[1])
+        for par in first_sets:
+            for tuple in par.set:
+                return_matrix[tuple[0],tuple[1]] = par.color
+                available_colors.append(par.color)
 
         #Transforma cada color de los ultimos conjuntos en uno de los average de los primeros n conjuntos
-        for tuple_set_average in first_sets:
-            for tuple in tuple_set_average[0]:
+        for par in first_sets:
+            for tuple in par.set:
                 return_matrix[tuple[0],tuple[1]] = min(available_colors, key=lambda color: ColorUtils.delta_ciede2000(self.matrix[tuple[0],tuple[1]], color))
 
         return return_matrix
 
-    def __expand(self, prev: Tuple[int,int], p: Tuple[int,int], visited_matrix: np.ndarray, index_set_matrix: np.ndarray, color_set_list: List[Tuple[set[Tuple[int,int]],np.ndarray]], delta_threshold = 20):
+    def __expand(self, prev: Tuple[int,int], p: Tuple[int,int], visited_matrix: np.ndarray, index_set_matrix: np.ndarray, color_set_list: List[ParSetColor], delta_threshold = 20):
         i:int = p[0]
         j:int = p[1]
         if ( i<self.height and j<self.width ):
             prev_set_index:int = index_set_matrix[prev[0],prev[1]]
-            prev_tuple_set_average = color_set_list[prev_set_index]
-            average_color_prev_set = color_set_list[prev_set_index][1]
+            prev_par_set_color = color_set_list[prev_set_index]
+            average_color_prev_set = color_set_list[prev_set_index].color
             delta: float = ColorUtils.delta_ciede2000(average_color_prev_set, self.matrix[i,j])
             
             #Mejor delta, hay que insertar en el conjunto anterior
@@ -150,11 +157,11 @@ class MatrixColorService:
                 #Este nodo ya fue visitado, hay que eliminarlo del conjunto donde esta
                 if (visited_matrix[i,j]):
                     set_index = index_set_matrix[i,j]
-                    tuple_set_average = color_set_list[set_index]
-                    self.__delete_color_from_set(tuple_set_average, (i,j))
+                    par_set_color = color_set_list[set_index]
+                    self.__delete_color_from_set(par_set_color, (i,j))
                 
                 index_set_matrix[i,j] = prev_set_index
-                self.__add_color_to_set(prev_tuple_set_average,(i,j))
+                self.__add_color_to_set(prev_par_set_color,(i,j))
                 visited_matrix[i,j] = True
                 self.__expand((i,j),(i+1,j),visited_matrix,index_set_matrix,color_set_list,delta_threshold)
                 self.__expand((i,j),(i,j+1),visited_matrix,index_set_matrix,color_set_list,delta_threshold)
@@ -163,20 +170,20 @@ class MatrixColorService:
             elif (not visited_matrix[i,j]):
                 visited_matrix[i,j] = True
 
-                color_set_list.append(({(i,j)}, self.matrix[i,j]))
+                color_set_list.append(ParSetColor({(i,j)},self.matrix[i,j]))
                 visited_matrix[i,j] = True
                 index_set_matrix[i,j] = len(color_set_list) - 1
 
                 self.__expand((i,j),(i+1,j),visited_matrix,index_set_matrix,color_set_list,delta_threshold)
                 self.__expand((i,j),(i,j+1),visited_matrix,index_set_matrix,color_set_list,delta_threshold)
 
-    def __add_color_to_set(self, tuple: Tuple[set[Tuple[int,int]],np.ndarray], p: Tuple[int,int]):
+    def __add_color_to_set(self, par: ParSetColor, p: Tuple[int,int]):
         new_color = self.matrix[p[0],p[1]]
-        tuple[1] = (tuple[1] * len(tuple[0]) + new_color) / (len(tuple[0]) + 1)
-        tuple[0].add(p)
+        par.color = (par.color * len(par.set) + new_color) / (len(par.set) + 1)
+        par.set.add(p)
     
-    def __delete_color_from_set(self, tuple: Tuple[set[Tuple[int,int]],np.ndarray], p: Tuple[int,int]):
+    def __delete_color_from_set(self, par: ParSetColor, p: Tuple[int,int]):
         old_color = self.matrix[p[0],p[1]]
-        if len(tuple[0]) > 1:
-            tuple[1] = (tuple[1] * len(tuple[0]) - old_color) / (len(tuple[0]) - 1)
-        tuple[0].remove(p)
+        if len(par.set) > 1:
+            par.color = (par.color * len(par.set) - old_color) / (len(par.set) - 1)
+        par.set.remove(p)

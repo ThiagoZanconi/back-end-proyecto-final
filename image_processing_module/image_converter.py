@@ -175,7 +175,7 @@ matriz_256 = reducir_imagen(matriz_1024x1024, (256, 256))
 matriz_128 = reducir_imagen(matriz_1024x1024, (128, 128))
 lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(matriz_128)
 matrix_color_service = MatrixColorService(lab_matrix)
-resultado = matrix_color_service.paint_main_colors()
+resultado = matrix_color_service.expansion()
 
 
 
