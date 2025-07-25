@@ -33,8 +33,6 @@ def unify_sub_matrices_color(original_matrix: NDArray[np.float64], div_factor = 
             counter = Counter()
             for a in range(sub_matrix_height*i,sub_matrix_height*(i+1)):
                 for b in range(sub_matrix_width*j,sub_matrix_width*(j+1)):
-                    if(tuple(original_matrix[a,b])!=(0,0,0)):
-                        print(tuple(original_matrix[a,b]))
                     counter[tuple(original_matrix[a,b])]+=1
 
             most_common = counter.most_common(1)[0][0]
@@ -101,7 +99,6 @@ def __closest_color(color: np.ndarray, palette: NDArray[np.float64]) -> NDArray[
     closest_color = palette[0]
     for i in range(len(palette)):
         delta = ColorUtils.delta_ciede2000(color,palette[i])
-        print(delta)
         if(delta < most_similar_value):
             most_similar_value = delta
             closest_color = palette[i]
@@ -150,14 +147,13 @@ matriz_1024x1024: NDArray[np.uint8] = np.array(sword_image)
 matriz_256 = reducir_imagen(matriz_1024x1024, (256, 256))
 matriz_128 = reducir_imagen(matriz_1024x1024, (128, 128))
 lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(matriz_128)
-resultado = draw_main_colors(lab_matrix,16)
+resultado = draw_main_colors(lab_matrix,14)
 resultado = unify_sub_matrices_color(resultado,div_factor=128)
 resultado = unify_sub_matrices_color(resultado,div_factor=64)
+resultado = unify_sub_matrices_color(resultado,div_factor=32)
 resultado = blacken_background(resultado)
 resultado = fill_image_gaps(resultado,5)
 '''
-
-
 '''
 resultado = Image.open("resources/pixel_sword_processed.png").convert("RGB")  # Asegura que sea RGB
 resultado: NDArray[np.uint8] = np.array(resultado)
@@ -167,14 +163,22 @@ resultado = draw_main_colors(resultado,4)
 resultado = ShapeFinder.find_shape(resultado,5)
 '''
 
+
 sword_image = Image.open("resources/pixel_sword_1024x1024.png").convert("RGB")  # Asegura que sea RGB
 # Convertir a matriz NumPy
 matriz_1024x1024: NDArray[np.uint8] = np.array(sword_image)
 matriz_128 = reducir_imagen(matriz_1024x1024, (128, 128))
 lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(matriz_128)
 matrix_color_service = MatrixColorService(lab_matrix)
+resultado = matrix_color_service.delta_matrix(9)
+'''
+resultado = matrix_color_service.expansion_bfs(n=3000,delta_threshold=12)
+resultado = unify_sub_matrices_color(resultado,div_factor=128)
+resultado = unify_sub_matrices_color(resultado,div_factor=64)
+resultado = unify_sub_matrices_color(resultado,div_factor=32)
+resultado = blacken_background(resultado)
+resultado = fill_image_gaps(resultado,5)
+'''
 
-#resultado = matrix_color_service.expansion(n=15,delta_threshold=12)
-resultado = matrix_color_service.expansion_bfs(n=15,delta_threshold=12)
 rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(resultado)
 Image.fromarray(rgb_matrix).show()

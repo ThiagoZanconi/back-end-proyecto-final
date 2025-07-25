@@ -11,6 +11,12 @@ class ParSetColor:
     set: set[Tuple[int,int]]
     color: np.ndarray
 
+@dataclass
+class ConjuntoConectado:
+    set: set[Tuple[int,int]]
+    a: Tuple[int,int]
+    b: Tuple[int,int]
+
 class MatrixColorService:
     matrix: NDArray[np.float64]
     height: int
@@ -119,6 +125,7 @@ class MatrixColorService:
         self.__expand_bfs(visited_matrix,index_set_matrix,color_set_list,delta_threshold)
         color_set_list.sort(key=lambda x: len(x.set), reverse=True)
         #Obtenemos los primeros n conjuntos y restantes
+        print(len(color_set_list)," Sets")
         first_sets = color_set_list[:n]
         last_sets = color_set_list[n:]
 
@@ -129,12 +136,16 @@ class MatrixColorService:
                 self.matrix[tuple[0],tuple[1]] = par.color
             available_colors.append(par.color)
 
+        '''
+        p_queue = deque(point for par in last_sets for point in par.set)
+        self.__join_neighbors(p_queue)
+        '''
         #Mejorar para que se haga expansion sobre este conjunto de colores
         #Transforma cada color de los ultimos conjuntos en uno de los average de los primeros n conjuntos
         for par in last_sets:
             for tuple in par.set:
                 self.matrix[tuple[0],tuple[1]] = min(available_colors, key=lambda color: ColorUtils.delta_ciede2000(self.matrix[tuple[0],tuple[1]], color))
-
+        
         return self.matrix
 
     def __expand_bfs(self, visited_matrix: np.ndarray, index_set_matrix: np.ndarray, color_set_list: List[ParSetColor], delta_threshold = 20):
@@ -191,3 +202,117 @@ class MatrixColorService:
         if len(par.set) > 1:
             par.color = (par.color * len(par.set) - old_color) / (len(par.set) - 1)
         par.set.remove(p)
+
+    def __join_neighbors(self, p_queue: deque[Tuple[int,int]]):
+        while p_queue:
+            p = p_queue.popleft()
+            i,j = p
+            neighbors = [(i-1,j),(i+1,j),(i,j-1),(i,j+1)]
+            candidates = [
+                (ni, nj) for ni, nj in neighbors
+                if 0 <= ni < self.height and 0 <= nj < self.width and (ni, nj) not in p_queue
+            ]
+            if candidates:
+                target_color = self.matrix[i, j]
+                best_color = min(
+                    (self.matrix[ci, cj] for ci, cj in candidates),
+                    key=lambda color: ColorUtils.delta_ciede2000(target_color, color)
+                )
+                self.matrix[i, j] = best_color
+            else:
+                p_queue.append(p)
+
+    def delta_matrix(self, threshold = 15) -> NDArray[np.float64]:
+        delta_matrix: np.ndarray = np.full((self.height, self.width), 0, dtype=float)
+        p_set:set[Tuple[int,int]] = set()
+        for i in range(self.height):
+            for j in range(self.width):
+                delta = self.__delta_vecinos((i,j))
+                if delta>threshold:
+                    delta_matrix[i,j] = 100
+                    p_set.add((i,j))
+        self.matrix[:, :, 0] =  delta_matrix
+        self.matrix[:, :, 1] = 0                             
+        self.matrix[:, :, 2] = 0
+        p_set = self.__eliminar_cruzados(p_set)
+        set_copy = p_set.copy()
+        connected_sets = self.__conjuntos_conectados(set_copy)
+        print("Connected sets: ",connected_sets)
+        for i in range(self.height):
+            for j in range(self.width):
+                if (i,j) not in p_set:
+                    self.matrix[i, j, 0] = 0
+        return self.matrix 
+        
+    def __delta_vecinos(self, p: Tuple[int, int]) -> np.float64:
+        i, j = p
+        max_delta = 0.0
+
+        for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            ni, nj = i + di, j + dj
+            if 0 <= ni < self.height and 0 <= nj < self.width:
+                delta = ColorUtils.delta_ciede2000(self.matrix[i, j], self.matrix[ni, nj])
+                max_delta = max(max_delta, delta)
+
+        return max_delta
+
+    def __eliminar_cruzados(self, points: set[tuple[int, int]]) -> set[tuple[int, int]]:
+        # Crear estructuras para acceso rápido
+        from collections import defaultdict
+
+        col_map = defaultdict(set)  # j -> set of i
+        row_map = defaultdict(set)  # i -> set of j
+
+        for i, j in points:
+            col_map[j].add(i)
+            row_map[i].add(j)
+
+        result = set()
+        for i, j in points:
+            arriba = any(ii < i for ii in col_map[j])
+            abajo  = any(ii > i for ii in col_map[j])
+            izq    = any(jj < j for jj in row_map[i])
+            der    = any(jj > j for jj in row_map[i])
+
+            if not (arriba and abajo and izq and der):
+                result.add((i, j))
+
+        return result
+    
+    def __conjuntos_conectados(self, p_set :set[Tuple[int,int]]) -> List[ConjuntoConectado]:
+        toReturn: List[ConjuntoConectado] = []
+        while(len(p_set)>0):
+            p = next(iter(p_set))
+            s:set = {p}
+            conected_set:ConjuntoConectado = ConjuntoConectado(s,p,p)
+            adyacentes = self.__obtener_adyacentes(p,p_set)
+            if len(adyacentes)>0:
+                conectados = self.__conectados(p,adyacentes[0],p_set)
+                conected_set.a = conectados[-1]
+                s.update(conectados)
+            if len(adyacentes)>1:
+                conectados = self.__conectados(p,adyacentes[1],p_set)
+                conected_set.b = conectados[-1]
+                s.update(conectados)
+            toReturn.append(conected_set)
+            p_set -= s
+        return toReturn
+
+    def __conectados(self, prev: Tuple[int, int], p: Tuple[int, int], p_set: set[Tuple[int, int]]) -> List[Tuple[int, int]]:
+        p_set.discard(p)
+        adyacentes = self.__obtener_adyacentes(p, p_set)
+        if len(adyacentes) > 1:
+            next_p = adyacentes[0] if adyacentes[0] != prev else adyacentes[1]
+            return [p] + self.__conectados(p, next_p, p_set)
+        else:
+            return [p]
+
+    def __obtener_adyacentes(self, p: Tuple[int,int], c: set[Tuple[int,int]]) -> List[Tuple[int,int]]:
+        i, j = p
+        vecinos_relativos = [
+            (-1, -1), (-1, 0), (-1, 1),
+            (0, -1),          (0, 1),
+            (1, -1),  (1, 0), (1, 1)
+        ]
+        
+        return [(i + di, j + dj) for di, dj in vecinos_relativos if (i + di, j + dj) in c]
