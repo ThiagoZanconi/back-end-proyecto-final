@@ -174,7 +174,6 @@ matriz_128 = reducir_imagen(matriz_1024x1024, (128, 128))
 lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(matriz_128)
 matrix_color_service = MatrixColorService(lab_matrix)
 
-#resultado = matrix_color_service.expansion(n=200,delta_threshold=50)
-resultado = matrix_color_service.expansion_v2(n=30,delta_threshold_start=50)
+resultado = matrix_color_service.expansion(n=12,delta_threshold=8)
 rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(resultado)
 Image.fromarray(rgb_matrix).show()

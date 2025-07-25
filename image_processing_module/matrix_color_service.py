@@ -1,4 +1,4 @@
-from collections import Counter
+from collections import Counter, deque
 from dataclasses import dataclass
 from typing import List, Tuple
 from numpy.typing import NDArray
@@ -117,13 +117,16 @@ class MatrixColorService:
         #Lista de pares conjunto de colores y color promedio.
         color_set_list: List[ParSetColor] = []
 
-        #Caso base
-        par: ParSetColor = ParSetColor({(0,0)},self.matrix[0,0])
+        i = 0
+        j = 0
+        #Caso base, medio de la matriz
+        par: ParSetColor = ParSetColor({(i,j)},self.matrix[i,j])
         color_set_list.append(par)
-        visited_matrix[0,0] = True
-        index_set_matrix[0,0] = 0
-        self.__expand((0,0),(1,0),visited_matrix,index_set_matrix,color_set_list,delta_threshold)
-        self.__expand((0,0),(0,1),visited_matrix,index_set_matrix,color_set_list,delta_threshold)
+
+        visited_matrix[i,j] = True
+        index_set_matrix[i,j] = 0
+        self.__expand((i,j),(i+1,j),visited_matrix,index_set_matrix,color_set_list,delta_threshold)
+        self.__expand((i,j),(i,j+1),visited_matrix,index_set_matrix,color_set_list,delta_threshold)
 
         color_set_list.sort(key=lambda x: len(x.set), reverse=True)
         #Obtenemos los primeros n conjuntos y restantes
@@ -145,38 +148,11 @@ class MatrixColorService:
 
         return self.matrix
     
-    def expansion_v2(self, n = 100, delta_threshold_start = 60) -> NDArray[np.float64]:
-        if self.matrix.shape[-1] != 3:
-            raise ValueError("Matriz de color inválida: no tiene 3 canales (L,a,b)")
-        visited_matrix: np.ndarray = np.full((self.height, self.width), False, dtype=bool)
-        index_set_matrix: np.ndarray = np.full((self.height, self.width), -1, dtype=int)
-        #Lista de pares conjunto de colores y color promedio.
-        color_set_list: List[ParSetColor] = []
-
-        #Caso base
-        par: ParSetColor = ParSetColor({(0,0)},self.matrix[0,0])
-        color_set_list.append(par)
-        visited_matrix[0,0] = True
-        index_set_matrix[0,0] = 0
-        self.__expand((0,0),(1,0),visited_matrix,index_set_matrix,color_set_list,delta_threshold_start)
-        self.__expand((0,0),(0,1),visited_matrix,index_set_matrix,color_set_list,delta_threshold_start)
-        first_sets = color_set_list[:n]
-
-        #Transforma cada color de los primeros n conjuntos al average correspondiente de su conjunto
-        for par in first_sets:
-            for tuple in par.set:
-                self.matrix[tuple[0],tuple[1]] = par.color
-
-        print("Set size: ",len(color_set_list))
-        if(len(color_set_list)>n):
-            self.expansion_v2(n,delta_threshold_start+0.5)
-
-        return self.matrix
-
+    #Implementar BFS
     def __expand(self, prev: Tuple[int,int], p: Tuple[int,int], visited_matrix: np.ndarray, index_set_matrix: np.ndarray, color_set_list: List[ParSetColor], delta_threshold = 20):
         i:int = p[0]
         j:int = p[1]
-        if ( i<self.height and j<self.width ):
+        if ( 0 <= i < self.height and 0 <= j < self.width ):
             prev_set_index:int = index_set_matrix[prev[0],prev[1]]
             prev_par_set_color = color_set_list[prev_set_index]
             average_color_prev_set = prev_par_set_color.color
@@ -200,15 +176,13 @@ class MatrixColorService:
             else:
                 set_index = index_set_matrix[i,j]
                 par_set_color: ParSetColor = color_set_list[set_index]
-                actual_delta = ColorUtils.delta_ciede2000(par_set_color.color, self.matrix[i,j])
-                #Habia sido visitado y el delta cumple. Si el color actual estaba solo en un conjunto y el delta cumple se mueve de conjunto.
-                if(prev_delta<delta_threshold and (len(par_set_color.set) == 1 or prev_delta < actual_delta)):
+                #Habia sido visitado y el delta cumple. Prioriza el conjunto
+                if(prev_delta<delta_threshold and (len(par_set_color.set) < len(prev_par_set_color.set))):
                     self.__delete_color_from_set(par_set_color, (i,j))
-
                     index_set_matrix[i,j] = prev_set_index
                     self.__add_color_to_set(prev_par_set_color,(i,j))
                     self.__expand((i,j),(i+1,j),visited_matrix,index_set_matrix,color_set_list,delta_threshold)
-                    self.__expand((i,j),(i,j+1),visited_matrix,index_set_matrix,color_set_list,delta_threshold)
+                    self.__expand((i,j),(i,j-1),visited_matrix,index_set_matrix,color_set_list,delta_threshold)
 
     def __add_color_to_set(self, par: ParSetColor, p: Tuple[int,int]):
         new_color = self.matrix[p[0],p[1]]
