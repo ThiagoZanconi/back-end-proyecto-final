@@ -170,7 +170,7 @@ matriz_1024x1024: NDArray[np.uint8] = np.array(sword_image)
 matriz_128 = reducir_imagen(matriz_1024x1024, (128, 128))
 lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(matriz_128)
 matrix_color_service = MatrixColorService(lab_matrix)
-resultado = matrix_color_service.delta_matrix(9)
+resultado = matrix_color_service.delta_matrix(7.5)
 '''
 resultado = matrix_color_service.expansion_bfs(n=3000,delta_threshold=12)
 resultado = unify_sub_matrices_color(resultado,div_factor=128)
