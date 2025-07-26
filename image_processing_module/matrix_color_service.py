@@ -1,6 +1,7 @@
 from collections import Counter, deque
 from dataclasses import dataclass
-from typing import List, Tuple
+import math
+from typing import Dict, List, Tuple
 from numpy.typing import NDArray
 import numpy as np
 
@@ -223,25 +224,22 @@ class MatrixColorService:
                 p_queue.append(p)
 
     def delta_matrix(self, threshold = 15) -> NDArray[np.float64]:
-        delta_matrix: np.ndarray = np.full((self.height, self.width), 0, dtype=float)
         p_set:set[Tuple[int,int]] = set()
         for i in range(self.height):
             for j in range(self.width):
                 delta = self.__delta_vecinos((i,j))
                 if delta>threshold:
-                    delta_matrix[i,j] = 100
                     p_set.add((i,j))
-        self.matrix[:, :, 0] =  delta_matrix
-        self.matrix[:, :, 1] = 0                             
-        self.matrix[:, :, 2] = 0
+        self.__conectar_diagonales(p_set)
         p_set = self.__eliminar_cruzados(p_set)
-        set_copy = p_set.copy()
-        connected_sets = self.__conjuntos_conectados(set_copy)
-        print("Connected sets: ",connected_sets)
+        connected_sets = self.__conjuntos_conectados(p_set)
+        p_set = self.__conectar_conjuntos(connected_sets)
         for i in range(self.height):
             for j in range(self.width):
-                if (i,j) not in p_set:
-                    self.matrix[i, j, 0] = 0
+                if (i,j) in p_set:
+                    self.matrix[i, j] = [100,0,0]
+                else:
+                    self.matrix[i, j] = [0,0,0]
         return self.matrix 
         
     def __delta_vecinos(self, p: Tuple[int, int]) -> np.float64:
@@ -255,7 +253,29 @@ class MatrixColorService:
                 max_delta = max(max_delta, delta)
 
         return max_delta
+    
+    #Conecta los puntos que solo estan unidos por diagonales, de forma directa
+    def __conectar_diagonales(self,p_set :set[Tuple[int,int]]):
+        p_queue: deque[Tuple[int, int]] = deque()
+        for p in iter(p_set):
+            i,j = p
+            vecinos_diagonales = self.__obtener_adyacentes_diagonales(p,p_set)
+            for v in vecinos_diagonales:
+                vi, vj = v
+                if(not (i,vj) in p_set) or (not (vi,j) in p_set):
+                    p_queue.append((i,vj))
+        p_set.update(p_queue)
+        while(p_queue):
+            p = p_queue.popleft()
+            p_set.add(p)
+            i,j = p
+            vecinos_diagonales = self.__obtener_adyacentes_diagonales(p,p_set)
+            for v in vecinos_diagonales:
+                vi, vj = v
+                if(not (i,vj) in p_set) or (not (vi,j) in p_set):
+                    p_queue.append((i,vj))
 
+    #Elimina puntos que estan entre 4 puntos en sus horizontales y verticales. Y puntos que tengan 3 o mas adyacentes directos
     def __eliminar_cruzados(self, points: set[tuple[int, int]]) -> set[tuple[int, int]]:
         # Crear estructuras para acceso rápido
         from collections import defaultdict
@@ -274,45 +294,129 @@ class MatrixColorService:
             izq    = any(jj < j for jj in row_map[i])
             der    = any(jj > j for jj in row_map[i])
 
-            if not (arriba and abajo and izq and der):
+            if not ((arriba and abajo and izq and der)):
                 result.add((i, j))
 
         return result
     
     def __conjuntos_conectados(self, p_set :set[Tuple[int,int]]) -> List[ConjuntoConectado]:
         toReturn: List[ConjuntoConectado] = []
-        while(len(p_set)>0):
-            p = next(iter(p_set))
+        p_set_copy = p_set.copy()
+        while(len(p_set_copy)>0):
+            p = next(iter(p_set_copy))
             s:set = {p}
             conected_set:ConjuntoConectado = ConjuntoConectado(s,p,p)
-            adyacentes = self.__obtener_adyacentes(p,p_set)
+            p_set_copy.discard(p)
+            adyacentes = self.__obtener_adyacentes_directos(p,p_set_copy)
             if len(adyacentes)>0:
-                conectados = self.__conectados(p,adyacentes[0],p_set)
+                conectados = self.__conectados(p,adyacentes[0],p_set_copy)
                 conected_set.a = conectados[-1]
                 s.update(conectados)
             if len(adyacentes)>1:
-                conectados = self.__conectados(p,adyacentes[1],p_set)
+                conectados = self.__conectados(p,adyacentes[1],p_set_copy)
                 conected_set.b = conectados[-1]
                 s.update(conectados)
             toReturn.append(conected_set)
-            p_set -= s
         return toReturn
 
-    def __conectados(self, prev: Tuple[int, int], p: Tuple[int, int], p_set: set[Tuple[int, int]]) -> List[Tuple[int, int]]:
-        p_set.discard(p)
-        adyacentes = self.__obtener_adyacentes(p, p_set)
-        if len(adyacentes) > 1:
-            next_p = adyacentes[0] if adyacentes[0] != prev else adyacentes[1]
-            return [p] + self.__conectados(p, next_p, p_set)
+    def __conectados(self, prev: Tuple[int, int], p: Tuple[int, int], p_set_copy: set[Tuple[int, int]]) -> List[Tuple[int, int]]:
+        p_set_copy.discard(p)
+        adyacentes = self.__obtener_adyacentes_directos(p, p_set_copy)
+        if prev in adyacentes:
+            adyacentes.remove(prev)
+        print(adyacentes)
+        if len(adyacentes) > 0:
+            next_p = adyacentes[0]
+            return [p] + self.__conectados(p, next_p, p_set_copy)
         else:
             return [p]
 
-    def __obtener_adyacentes(self, p: Tuple[int,int], c: set[Tuple[int,int]]) -> List[Tuple[int,int]]:
+    def __obtener_adyacentes_directos(self, p: Tuple[int,int], c: set[Tuple[int,int]]) -> List[Tuple[int,int]]:
         i, j = p
-        vecinos_relativos = [
-            (-1, -1), (-1, 0), (-1, 1),
-            (0, -1),          (0, 1),
-            (1, -1),  (1, 0), (1, 1)
-        ]
+        vecinos_directos = [(-1, 0), (0, -1), (0, 1), (1, 0)]
+        return [(i + di, j + dj) for di, dj in vecinos_directos if (i + di, j + dj) in c]
+    
+    def __obtener_adyacentes_diagonales(self, p: Tuple[int,int], c: set[Tuple[int,int]]) -> List[Tuple[int,int]]:
+        i, j = p
+        vecinos_directos = [(-1, -1), (1, -1), (-1, 1), (1, 1)]
+        return [(i + di, j + dj) for di, dj in vecinos_directos if (i + di, j + dj) in c]
+    
+    def __conectar_conjuntos(self, connected_set_list: List[ConjuntoConectado]) -> set[Tuple[int,int]]:
+        point_set_dict: Dict[Tuple[int, int], ConjuntoConectado] = {}
+        p_set:set[Tuple[int,int]] = set()
+        for connected_set in connected_set_list:
+            a = connected_set.a
+            b = connected_set.b
+            p_set.add(a)
+            p_set.add(b)
+            point_set_dict[a] = connected_set
+            point_set_dict[b] = connected_set
         
-        return [(i + di, j + dj) for di, dj in vecinos_relativos if (i + di, j + dj) in c]
+        while(len(connected_set_list)>1):
+            connected_set = connected_set_list.pop()
+            a = connected_set.a
+            b = connected_set.b
+            closest = self.__punto_mas_cercano(p_set,a,b)
+            closest_set = point_set_dict[closest]
+            if(closest_set==connected_set):
+                print("Conjuntos iguales")
+            camino = self.__linea_bresenham(a,closest)
+            closest_a = closest_set.a
+            closest_b = closest_set.b
+            new_a = b
+            new_b = closest_a
+            to_remove = closest_b
+            if closest_a==closest:
+                new_b = closest_b
+                to_remove = closest_a
+
+            if(len(closest_set.set)==1):
+                p_set.discard(to_remove)
+            if(len(connected_set.set)==1):
+                p_set.discard(a)
+            closest_set.set.update(connected_set.set)
+            closest_set.set.update(camino)
+            closest_set.a = new_a
+            closest_set.b = new_b
+            point_set_dict[new_a] = closest_set
+            point_set_dict[new_b] = closest_set
+        return connected_set_list[0].set
+
+    #Retorna el punto mas cercano a a, tal que sea distinto de a y b.
+    def __punto_mas_cercano(self,puntos: set[Tuple[int, int]], a: Tuple[int, int], b: Tuple[int, int]) -> Tuple[int, int]:
+        return min(
+            (p for p in puntos if p != a and p != b),
+            key=lambda p: self.__distancia(p, a)
+        )
+
+    def __distancia(self,p1: Tuple[int, int], p2: Tuple[int, int]) -> float:
+        return math.hypot(p1[0] - p2[0], p1[1] - p2[1])
+    
+    #Encuentra el camino de puntos que une dos puntos a y b
+    def __linea_bresenham(self,a: Tuple[int, int], b: Tuple[int, int]) -> list[Tuple[int, int]]:
+        x0, y0 = a
+        x1, y1 = b
+        puntos = []
+
+        dx = abs(x1 - x0)
+        dy = abs(y1 - y0)
+
+        sx = 1 if x0 < x1 else -1
+        sy = 1 if y0 < y1 else -1
+
+        err = dx - dy
+
+        while True:
+            puntos.append((x0, y0))
+            if x0 == x1 and y0 == y1:
+                break
+            e2 = 2 * err
+            if e2 > -dy:
+                err -= dy
+                x0 += sx
+            if e2 < dx:
+                err += dx
+                y0 += sy
+
+        return puntos
+            
