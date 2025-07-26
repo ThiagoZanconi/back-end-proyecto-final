@@ -370,9 +370,9 @@ class MatrixColorService:
                 new_b = closest_b
                 to_remove = closest_a
 
-            if(len(closest_set.set)==1):
+            if(len(closest_set.set)>1):
                 p_set.discard(to_remove)
-            if(len(connected_set.set)==1):
+            if(len(connected_set.set)>1):
                 p_set.discard(a)
             closest_set.set.update(connected_set.set)
             closest_set.set.update(camino)
