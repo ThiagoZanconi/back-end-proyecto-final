@@ -20,29 +20,17 @@ class ConjuntoConectado:
 
 class MatrixColorService:
     matrix: NDArray[np.float64]
+    matrix_shape: NDArray[np.float64]
     height: int
     width: int
-    c1 = 1
-    c2 = 1
 
     # Contador para todos los colores
     __color_counter =  Counter()
-    # Contadores para cada color
-    __color_counters = {
-        "red": Counter(),
-        "black": Counter(),
-        "white": Counter(),
-        "blue": Counter(),
-        "green": Counter(),
-        "yellow": Counter(),
-        "grey": Counter(),
-        "brown": Counter(),
-        "other": Counter()
-    }
 
-    def __init__(self, matrix: NDArray[np.float64]):
+    def __init__(self, matrix: NDArray[np.float64], delta_threshold = 8):
         self.height, self.width, lab = matrix.shape
         self.matrix = matrix
+        self.__shape_matrix(delta_threshold)
         for i in range(self.height):
             for j in range(self.width):
                 self.save_color(matrix[i][j])
@@ -50,57 +38,8 @@ class MatrixColorService:
     def save_color(self, lab_color: np.ndarray):
         if lab_color.shape != (3,):
             raise ValueError("lab_color debe ser un array de forma (3,)")
-        
         L, a, b = lab_color.astype(int)
-        self.__color_counters[self.color_set(lab_color)][(L, a, b)] += 1
         self.__color_counter[(L, a, b)] += 1
-
-    def color_set(self, lab_color: np.ndarray) -> str:
-        if lab_color.shape != (3,):
-            raise ValueError("lab_color debe ser un array de forma (3,)")
-
-        L, a, b = lab_color.astype(int)
-        color = "other"
-
-        if ((L < 55 and a > 45 and b > -30) or (a > 100 and b > -70) or (L > 45 and a > 105) or (L < 10 and a > -30 and b > 105) or
-            (L < 15 and a > 5 and b > 80) or  (L < 35 and a > 30 and b > -25) and (a > 25 and b > 0) or  (L < 20 and a > 15 and b > 5)):
-            color = "red"
-        elif L <= 16 and -5 < a < 5 and -5 < b < 5:
-            color = "black"
-        elif L >= 83 and -2 < a < 2 and -2 < b < 2:
-            color = "white"
-        elif 16 < L < 83 and -3 < a < 3 and -3 < b < 3:
-            color = "grey"
-        elif 5 < L < 60 and a < -18 and b < -18:
-            color = "blue"
-        elif 5 < L < 60 and a < -40 and L > 0:
-            color = "green"
-        elif L > 67 and -5 < a < 5 and b > 67:
-            color = "yellow"
-        elif 15 < L < 60 and -5 < a < 15 and b > 10:
-            color = "brown"
-
-        return color
-
-    def __get_most_common_color(self, color: str) -> tuple[int, int, int]:
-        if color not in self.__color_counters:
-            raise ValueError(f"Color desconocido: {color}")
-        
-        counter = self.__color_counters[color]
-        most_common = counter.most_common(1)[0][0] 
-        return most_common
-    
-    def paint_main_colors(self) -> NDArray[np.float64]:
-        return_matrix: NDArray[np.float64] = np.zeros_like(self.matrix)  # Inicializa la matriz de salida
-
-        for i in range(self.height):
-            for j in range(self.width):
-                color = self.matrix[i, j]
-                color_set = self.color_set(color)
-                main_color = self.__get_most_common_color(color_set)
-                return_matrix[i, j] = main_color
-
-        return return_matrix
     
     '''
     Algoritmo de expansion:
@@ -117,7 +56,6 @@ class MatrixColorService:
     -El conjunto tiene un color promedio, cuando le llega la expansion a ese nodo consulta el delta con el color promedio, si es menor a cierto valor se incorpora al conjunto
     caso contrario crea su propio conjunto.
     '''
-
     def expansion_bfs(self, n = 12, delta_threshold = 12) -> NDArray[np.float64]:
         visited_matrix: np.ndarray = np.full((self.height, self.width), False, dtype=bool)
         index_set_matrix: np.ndarray = np.full((self.height, self.width), -1, dtype=int)
@@ -223,26 +161,28 @@ class MatrixColorService:
             else:
                 p_queue.append(p)
 
-    def delta_matrix(self, threshold = 15) -> NDArray[np.float64]:
+    def __shape_matrix(self, threshold) -> NDArray[np.float64]:
+        self.matrix_shape = np.empty_like(self.matrix)
         p_set:set[Tuple[int,int]] = set()
         for i in range(self.height):
             for j in range(self.width):
                 delta = self.__delta_vecinos((i,j))
                 if delta>threshold:
                     p_set.add((i,j))
-        #self.__conectar_diagonales(p_set)
+        self.__conectar_diagonales(p_set)
         self.__fill_gaps(p_set)
         #p_set = self.__eliminar_cruzados(p_set)
         connected_sets = self.__conjuntos_conectados(p_set)
         #connected_sets = self.__eliminar_conjuntos_conectados_pequeños(connected_sets)
+        p_set = connected_sets[0].set
         #p_set = self.__conectar_conjuntos(connected_sets)
         for i in range(self.height):
             for j in range(self.width):
                 if (i,j) in p_set:
-                    self.matrix[i, j] = [100,0,0]
+                    self.matrix_shape[i, j] = [100,0,0]
                 else:
-                    self.matrix[i, j] = [0,0,0]
-        return self.matrix 
+                    self.matrix_shape[i, j] = [0,0,0]
+        return self.matrix_shape 
         
     def __delta_vecinos(self, p: Tuple[int, int]) -> np.float64:
         i, j = p
@@ -342,42 +282,38 @@ class MatrixColorService:
         p_set_copy = p_set.copy()
         while(p_set_copy):
             p = next(iter(p_set_copy))
-            s:set = {p}
-            conected_set:ConjuntoConectado = ConjuntoConectado(s,p,p)
+            conected_set:ConjuntoConectado = ConjuntoConectado({p},p,p)
             p_set_copy.discard(p)
-            adyacentes = self.__obtener_adyacentes_directos(p,p_set_copy)
-            if len(adyacentes)>0:
-                conectados = self.__conectados(p,adyacentes[0],p_set_copy)
-                conected_set.a = conectados[-1]
-                s.update(conectados)
-            if len(adyacentes)>1:
-                conectados = self.__conectados(p,adyacentes[1],p_set_copy)
-                conected_set.b = conectados[-1]
-                s.update(conectados)
+            conectados = []
+            p_queue: deque[Tuple[int, int]] = deque([p])
+            while (p_queue):
+                p = p_queue.popleft()
+                i,j = p
+                adyacentes = [(i-1,j), (i,j-1), (i+1,j), (i,j+1)]
+                for index in range(len(adyacentes)):
+                    if(adyacentes[index] in p_set_copy):
+                        p_queue.append(adyacentes[index])
+                        conectados.append(adyacentes[index])
+                        p_set_copy.discard(adyacentes[index])
+                        if index == 1:
+                            conected_set.a = conectados[-1]
+                        else:
+                            conected_set.b = conectados[-1]
+            conected_set.set.update(conectados)
             toReturn.append(conected_set)
+        toReturn = sorted(toReturn, key=lambda cc: len(cc.set), reverse=True)
         return toReturn
-
-    def __conectados(self, prev: Tuple[int, int], p: Tuple[int, int], p_set_copy: set[Tuple[int, int]]) -> List[Tuple[int, int]]:
-        p_set_copy.discard(p)
-        adyacentes = self.__obtener_adyacentes_directos(p, p_set_copy)
-        if prev in adyacentes:
-            adyacentes.remove(prev)
-        print(adyacentes)
-        if len(adyacentes) > 0:
-            next_p = adyacentes[0]
-            return [p] + self.__conectados(p, next_p, p_set_copy)
-        else:
-            return [p]
-
-    def __obtener_adyacentes_directos(self, p: Tuple[int,int], c: set[Tuple[int,int]]) -> List[Tuple[int,int]]:
-        i, j = p
-        vecinos_directos = [(-1, 0), (0, -1), (0, 1), (1, 0)]
-        return [(i + di, j + dj) for di, dj in vecinos_directos if (i + di, j + dj) in c]
     
     def __eliminar_conjuntos_conectados_pequeños(self, connected_set_list: List[ConjuntoConectado]) -> List[ConjuntoConectado]:
         #delete_factor = (self.height * self.width) / ((self.height + self.width)*22)
         delete_factor = 4
         return [c for c in connected_set_list if len(c.set) >= delete_factor]
+    
+    def __puntos_en_conjuntos_conectados(self, connected_set_list: List[ConjuntoConectado]) -> set[Tuple[int,int]]:
+        toReturn = set()
+        for connected_set in connected_set_list:
+            toReturn.update(connected_set.set)
+        return toReturn
     
     def __conectar_conjuntos(self, connected_set_list: List[ConjuntoConectado]) -> set[Tuple[int,int]]:
         while(len(connected_set_list)>1):

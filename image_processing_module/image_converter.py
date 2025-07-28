@@ -24,7 +24,7 @@ def reducir_imagen(original_matrix: NDArray[np.uint8], nuevo_tamaño: Tuple[int,
     return reduced_matrix
 
 def unify_sub_matrices_color(original_matrix: NDArray[np.float64], div_factor = 32) -> NDArray[np.float64]:
-    height, width, rgb = original_matrix.shape
+    height, width, _ = original_matrix.shape
     sub_matrix_height = height // div_factor
     sub_matrix_width = width // div_factor
     for i in range(div_factor):
@@ -164,13 +164,14 @@ resultado = ShapeFinder.find_shape(resultado,5)
 '''
 
 
-sword_image = Image.open("resources/pixel_sword_1024x1024.png").convert("RGB")  # Asegura que sea RGB
+sword_image = Image.open("resources/red_potion_1024x1024.png").convert("RGB")  # Asegura que sea RGB
 # Convertir a matriz NumPy
 matriz_1024x1024: NDArray[np.uint8] = np.array(sword_image)
-matriz_128 = reducir_imagen(matriz_1024x1024, (256, 256))
+matriz_128 = reducir_imagen(matriz_1024x1024, (128, 128))
 lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(matriz_128)
-matrix_color_service = MatrixColorService(lab_matrix)
-resultado = matrix_color_service.delta_matrix(12)
+matrix_color_service = MatrixColorService(lab_matrix, delta_threshold = 8)
+resultado = matrix_color_service.matrix_shape
+resultado = fill_image_gaps(resultado,8)
 
 '''
 resultado = matrix_color_service.expansion_bfs(n=20,delta_threshold=20)
