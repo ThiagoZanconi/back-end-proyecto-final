@@ -21,6 +21,9 @@ class ConjuntoConectado:
 class MatrixColorService:
     matrix: NDArray[np.float64]
     matrix_shape: NDArray[np.float64]
+    boolean_matrix_shape: NDArray
+    background_set: set[Tuple[int,int]]
+    shape_set: set[Tuple[int,int]]
     height: int
     width: int
 
@@ -30,6 +33,8 @@ class MatrixColorService:
     def __init__(self, matrix: NDArray[np.float64], delta_threshold = 8):
         self.height, self.width, lab = matrix.shape
         self.matrix = matrix
+        self.background_set = set()
+        self.shape_set = set()
         self.__shape_matrix(delta_threshold)
         for i in range(self.height):
             for j in range(self.width):
@@ -162,23 +167,27 @@ class MatrixColorService:
                 p_queue.append(p)
 
     def __shape_matrix(self, threshold) -> NDArray[np.float64]:
+        self.boolean_matrix_shape = np.zeros((self.height, self.width), dtype=bool)
         self.matrix_shape = np.empty_like(self.matrix)
-        p_set:set[Tuple[int,int]] = set()
         for i in range(self.height):
             for j in range(self.width):
                 delta = self.__delta_vecinos((i,j))
                 if delta>threshold:
-                    p_set.add((i,j))
-        self.__conectar_diagonales(p_set)
-        self.__fill_gaps(p_set)
-        #p_set = self.__eliminar_cruzados(p_set)
-        connected_sets = self.__conjuntos_conectados(p_set)
-        #connected_sets = self.__eliminar_conjuntos_conectados_pequeños(connected_sets)
-        p_set = connected_sets[0].set
-        #p_set = self.__conectar_conjuntos(connected_sets)
+                    self.boolean_matrix_shape[i,j] = True
+                    self.shape_set.add((i,j))
+                else:
+                    self.background_set.add((i,j))
+        self.__fill_gaps()
+        connected_sets = self.__conjuntos_conectados()
+        self.shape_set = connected_sets[0].set
+        self.__tapar_picos_negros()
+        self.__extraer_borde_numpy()
+        self.__conectar_diagonales()
+        #connected_sets = self.__conjuntos_conectados()
+        #self.shape_set = self.__conectar_conjuntos(connected_sets)
         for i in range(self.height):
             for j in range(self.width):
-                if (i,j) in p_set:
+                if (i,j) in self.shape_set:
                     self.matrix_shape[i, j] = [100,0,0]
                 else:
                     self.matrix_shape[i, j] = [0,0,0]
@@ -196,29 +205,29 @@ class MatrixColorService:
 
         return max_delta
     
-    def __fill_gaps(self, p_set :set[Tuple[int,int]] ) -> set[Tuple[int,int]]:
-        border_set = p_set.copy()
+    def __fill_gaps(self ) -> set[Tuple[int,int]]:
+        border_set = self.shape_set.copy()
         while(border_set):
-            adyacentes_not_in_set: set[Tuple[int,int]] = self.__obtener_adyacentes_not_in_set(border_set,p_set)
-            border_set = self.__agregar_cruzados(p_set, adyacentes_not_in_set)
+            adyacentes_not_in_set: set[Tuple[int,int]] = self.__obtener_adyacentes_not_in_set(border_set)
+            border_set = self.__agregar_cruzados(adyacentes_not_in_set)
 
-    def __obtener_adyacentes_not_in_set(self, border_set: set[Tuple[int,int]], p_set: set[Tuple[int,int]]):
+    def __obtener_adyacentes_not_in_set(self, border_set: set[Tuple[int,int]]):
         toReturn: set[Tuple[int,int]] = set()
         for i,j in iter(border_set):
             vecinos = [(i-1,j-1), (i,j-1), (i-1,j), (i+1,j), (i,j+1), (i-1,j+1), (i+1,j-1), (i+1,j+1)]
             for vi,vj in vecinos:
-                if( 0 <= vi < self.height and 0 <= vj < self.width and (vi,vj) not in p_set):
+                if( 0 <= vi < self.height and 0 <= vj < self.width and (vi,vj) not in self.shape_set):
                     toReturn.add((vi,vj))
         return toReturn
     
-    def __agregar_cruzados(self, p_set: set[tuple[int, int]], adyacentes_not_in_set: List[Tuple[int,int]]) -> set[tuple[int, int]]:
+    def __agregar_cruzados(self, adyacentes_not_in_set: List[Tuple[int,int]]) -> set[tuple[int, int]]:
         # Crear estructuras para acceso rápido
         from collections import defaultdict
 
         col_map = defaultdict(set)  # j -> set of i
         row_map = defaultdict(set)  # i -> set of j
 
-        for i, j in p_set:
+        for i, j in self.shape_set:
             col_map[j].add(i)
             row_map[i].add(j)
 
@@ -230,56 +239,50 @@ class MatrixColorService:
             der    = any(jj > j for jj in row_map[i])
 
             if (arriba and abajo and izq and der):
-                p_set.add((i, j))
+                self.shape_set.add((i, j))
+                self.boolean_matrix_shape[i,j] = True
                 added.add((i, j))
 
         return added
 
     #Conecta los puntos que solo estan unidos por diagonales, de forma directa
-    def __conectar_diagonales(self,p_set :set[Tuple[int,int]]):
-        p_queue: deque[Tuple[int, int]] = deque(p_set)
+    def __conectar_diagonales(self):
+        
+        p_queue: deque[Tuple[int, int]] = deque(self.shape_set)
         while(p_queue):
             p = p_queue.popleft()
             i,j = p
-            vecinos_diagonales = self.__obtener_adyacentes_diagonales(p,p_set)
+            vecinos_diagonales = self.__obtener_adyacentes_diagonales(p)
             for v in vecinos_diagonales:
                 vi, vj = v
-                if(not (i,vj) in p_set) and (not (vi,j) in p_set):
-                    p_set.add((i,vj))
+                if(not (i,vj) in self.shape_set) and (not (vi,j) in self.shape_set):
+                    self.shape_set.add((i,vj))
+                    self.boolean_matrix_shape[i,j] = True
                     p_queue.append((i,vj))
                     
-    def __obtener_adyacentes_diagonales(self, p: Tuple[int,int], c: set[Tuple[int,int]]) -> List[Tuple[int,int]]:
+    def __obtener_adyacentes_diagonales(self, p: Tuple[int,int]) -> List[Tuple[int,int]]:
         i, j = p
         vecinos_diagonales = [(-1, -1), (1, -1), (-1, 1), (1, 1)]
-        return [(i + di, j + dj) for di, dj in vecinos_diagonales if (i + di, j + dj) in c]
+        return [(i + di, j + dj) for di, dj in vecinos_diagonales if (i + di, j + dj) in self.shape_set]
     
-    #Elimina puntos que estan entre 4 puntos en sus horizontales y verticales. Y puntos que tengan 3 o mas adyacentes directos
-    def __eliminar_cruzados(self, points: set[tuple[int, int]]) -> set[tuple[int, int]]:
-        # Crear estructuras para acceso rápido
-        from collections import defaultdict
+    def __extraer_borde_numpy(self):
+        padded = np.pad(self.boolean_matrix_shape, pad_width=1, mode='constant', constant_values=0)
+        centro = self.boolean_matrix_shape
+        arriba = padded[:-2, 1:-1]
+        abajo = padded[2:, 1:-1]
+        izquierda = padded[1:-1, :-2]
+        derecha = padded[1:-1, 2:]
 
-        col_map = defaultdict(set)  # j -> set of i
-        row_map = defaultdict(set)  # i -> set of j
-
-        for i, j in points:
-            col_map[j].add(i)
-            row_map[i].add(j)
-
-        result = set()
-        for i, j in points:
-            arriba = any(ii < i for ii in col_map[j])
-            abajo  = any(ii > i for ii in col_map[j])
-            izq    = any(jj < j for jj in row_map[i])
-            der    = any(jj > j for jj in row_map[i])
-
-            if not ((arriba and abajo and izq and der)):
-                result.add((i, j))
-
-        return result
+        erosionada = centro & arriba & abajo & izquierda & derecha
+        self.boolean_matrix_shape = centro & ~erosionada
+        for i in range(self.height):
+            for j in range(self.width):
+                if not self.boolean_matrix_shape[i,j]:
+                    self.shape_set.discard((i,j))
     
-    def __conjuntos_conectados(self, p_set :set[Tuple[int,int]]) -> List[ConjuntoConectado]:
+    def __conjuntos_conectados(self) -> List[ConjuntoConectado]:
         toReturn: List[ConjuntoConectado] = []
-        p_set_copy = p_set.copy()
+        p_set_copy = self.shape_set.copy()
         while(p_set_copy):
             p = next(iter(p_set_copy))
             conected_set:ConjuntoConectado = ConjuntoConectado({p},p,p)
@@ -304,6 +307,31 @@ class MatrixColorService:
         toReturn = sorted(toReturn, key=lambda cc: len(cc.set), reverse=True)
         return toReturn
     
+    def __tapar_picos_negros(self, factor = 8):
+        for i in range(self.height):
+            black_row = factor
+            for j in range(self.width):
+                if(i,j) not in self.shape_set:
+                    black_row+=1
+                else:
+                    if black_row<factor:
+                        for n in range(j-1, j-black_row-2, -1):
+                            self.shape_set.add((i,n))
+                            self.boolean_matrix_shape[i,n] = True
+                    black_row = 0
+
+        for j in range(self.width):
+            black_row = factor
+            for i in range(self.height):
+                if(i,j) not in self.shape_set:
+                    black_row+=1
+                else:
+                    if black_row<factor:
+                        for n in range(i-1, i-black_row-2, -1):
+                            self.shape_set.add((n,j))
+                            self.boolean_matrix_shape[n,j] = True
+                    black_row = 0
+        
     def __eliminar_conjuntos_conectados_pequeños(self, connected_set_list: List[ConjuntoConectado]) -> List[ConjuntoConectado]:
         #delete_factor = (self.height * self.width) / ((self.height + self.width)*22)
         delete_factor = 4

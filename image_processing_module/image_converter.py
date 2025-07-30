@@ -7,21 +7,24 @@ from color_utils import ColorUtils
 from matrix_color_service import MatrixColorService
 from shape_finder import ShapeFinder
 
-def reducir_imagen(original_matrix: NDArray[np.uint8], nuevo_tamaño: Tuple[int, int])-> NDArray[np.uint8]:
+def reducir_imagen(original_matrix: NDArray[np.uint8], nuevo_tamaño: Tuple[int, int]) -> NDArray[np.uint8]:
     height, width, rgb = original_matrix.shape
     new_height, new_width = nuevo_tamaño
 
-    # Factor de reducción (debe ser exacto)
-    factor_h = height // new_height
-    factor_w = width // new_width
+    # Coordenadas de división de bloques sin pérdida/solape
+    ys = np.linspace(0, height, new_height + 1, dtype=int)
+    xs = np.linspace(0, width, new_width + 1, dtype=int)
 
-    reduced_matrix = np.zeros((new_height, new_width, rgb), dtype=np.uint8)
-    # Redimensiona por bloques: reshape + mean
+    reduced = np.zeros((new_height, new_width, rgb), dtype=np.uint8)
+
     for i in range(new_height):
         for j in range(new_width):
-            reduced_matrix[i,j] = original_matrix[i*factor_h,j*factor_w]
+            y0, y1 = ys[i], ys[i+1]
+            x0, x1 = xs[j], xs[j+1]
+            block = original_matrix[y0:y1, x0:x1]
+            reduced[i, j] = block.mean(axis=(0, 1)).astype(np.uint8)
 
-    return reduced_matrix
+    return reduced
 
 def unify_sub_matrices_color(original_matrix: NDArray[np.float64], div_factor = 32) -> NDArray[np.float64]:
     height, width, _ = original_matrix.shape
@@ -164,14 +167,13 @@ resultado = ShapeFinder.find_shape(resultado,5)
 '''
 
 
-sword_image = Image.open("resources/red_potion_1024x1024.png").convert("RGB")  # Asegura que sea RGB
+sword_image = Image.open("resources/knekro.jpg").convert("RGB")  # Asegura que sea RGB
 # Convertir a matriz NumPy
 matriz_1024x1024: NDArray[np.uint8] = np.array(sword_image)
-matriz_128 = reducir_imagen(matriz_1024x1024, (128, 128))
+matriz_128 = reducir_imagen(matriz_1024x1024, (256, 256))
 lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(matriz_128)
-matrix_color_service = MatrixColorService(lab_matrix, delta_threshold = 8)
+matrix_color_service = MatrixColorService(lab_matrix, delta_threshold = 10)
 resultado = matrix_color_service.matrix_shape
-resultado = fill_image_gaps(resultado,8)
 
 '''
 resultado = matrix_color_service.expansion_bfs(n=20,delta_threshold=20)
