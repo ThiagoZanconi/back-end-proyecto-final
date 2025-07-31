@@ -171,7 +171,7 @@ sword_image = Image.open("resources/knekro.jpg").convert("RGB")  # Asegura que s
 matriz_1024x1024: NDArray[np.uint8] = np.array(sword_image)
 matriz_128 = reducir_imagen(matriz_1024x1024, (256, 256))
 lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(matriz_128)
-matrix_color_service = MatrixColorService(lab_matrix, delta_threshold = 10)
+matrix_color_service = MatrixColorService(lab_matrix, delta_threshold = 8.5)
 resultado = matrix_color_service.remover_fondo()
 
 '''

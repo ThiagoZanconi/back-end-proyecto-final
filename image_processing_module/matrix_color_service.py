@@ -19,8 +19,8 @@ class ConjuntoConectado:
     b: Tuple[int,int]
 
 class MatrixColorService:
-    matrix: NDArray[np.int8]
-    matrix_shape: NDArray[np.int8]
+    matrix: NDArray[np.float64]
+    matrix_shape: NDArray[np.float64]
     boolean_matrix_shape: NDArray[np.bool_]
     boolean_matrix_border: NDArray[np.bool_]
     background_set: set[Tuple[int,int]]
