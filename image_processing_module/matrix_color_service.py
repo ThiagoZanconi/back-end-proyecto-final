@@ -45,6 +45,14 @@ class MatrixColorService:
             raise ValueError("lab_color debe ser un array de forma (3,)")
         L, a, b = lab_color.astype(int)
         self.__color_counter[(L, a, b)] += 1
+
+    def remover_fondo(self) -> NDArray[np.float64]:
+        matriz_sin_fondo = self.matrix.copy()
+        for i in range(self.height):
+            for j in range(self.width):
+                if(not self.boolean_matrix_shape[i,j]):
+                    matriz_sin_fondo[i,j] = [0,0,0]
+        return matriz_sin_fondo
     
     '''
     Algoritmo de expansion:
@@ -177,14 +185,13 @@ class MatrixColorService:
                     self.shape_set.add((i,j))
                 else:
                     self.background_set.add((i,j))
+        self.__connect_borders()
         self.__fill_gaps()
         connected_sets = self.__conjuntos_conectados()
         self.shape_set = connected_sets[0].set
         self.__tapar_picos_negros()
-        self.__extraer_borde_numpy()
-        self.__conectar_diagonales()
-        #connected_sets = self.__conjuntos_conectados()
-        #self.shape_set = self.__conectar_conjuntos(connected_sets)
+        #self.__extraer_borde_numpy()
+        #self.__conectar_diagonales()
         for i in range(self.height):
             for j in range(self.width):
                 if (i,j) in self.shape_set:
@@ -204,6 +211,49 @@ class MatrixColorService:
                 max_delta = max(max_delta, delta)
 
         return max_delta
+    
+    def __connect_borders(self):
+        top_row_length = 0
+        bottom_row_length = 0
+        left_column_length = 0
+        right_column_length = 0
+        for i in range(self.height):
+            if(self.boolean_matrix_shape[i,0]):
+                if(left_column_length != 0):
+                    for n in range(i, i - left_column_length, -1):
+                        self.boolean_matrix_shape[n,0] = True
+                        self.shape_set.add((n,0))
+                left_column_length = 1
+            elif left_column_length!=0:
+                left_column_length+=1
+
+            if(self.boolean_matrix_shape[i,self.width-1]):
+                if(right_column_length != 0):
+                    for n in range(i, i - right_column_length, -1):
+                        self.boolean_matrix_shape[n,self.width-1] = True
+                        self.shape_set.add((n,self.width-1))
+                right_column_length = 1
+            elif right_column_length!=0:
+                right_column_length+=1
+
+        for j in range(self.width):
+            if(self.boolean_matrix_shape[0,j]):
+                if(top_row_length != 0):
+                    for n in range(j, j - top_row_length, -1):
+                        self.boolean_matrix_shape[0,n] = True
+                        self.shape_set.add((0,n))
+                top_row_length = 1
+            elif top_row_length!=0:
+                top_row_length+=1
+
+            if(self.boolean_matrix_shape[self.height-1,j]):
+                if(bottom_row_length != 0):
+                    for n in range(j, j - bottom_row_length, -1):
+                        self.boolean_matrix_shape[self.height-1,n] = True
+                        self.shape_set.add((self.height-1,n))
+                bottom_row_length = 1
+            elif bottom_row_length!=0:
+                bottom_row_length+=1
     
     def __fill_gaps(self ) -> set[Tuple[int,int]]:
         border_set = self.shape_set.copy()
