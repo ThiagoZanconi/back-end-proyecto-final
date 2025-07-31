@@ -331,29 +331,23 @@ class MatrixColorService:
     
     def __conjuntos_conectados(self) -> List[ConjuntoConectado]:
         toReturn: List[ConjuntoConectado] = []
-        self.shape_set = self.__sync_matrix_set(self.boolean_matrix_shape)
-        p_set_copy = self.shape_set.copy()
-        while(p_set_copy):
-            p = next(iter(p_set_copy))
-            conected_set:ConjuntoConectado = ConjuntoConectado({p},p,p)
-            p_set_copy.discard(p)
-            conectados = []
-            p_queue: deque[Tuple[int, int]] = deque([p])
-            while (p_queue):
-                p = p_queue.popleft()
-                i,j = p
-                adyacentes = [(i-1,j), (i,j-1), (i+1,j), (i,j+1)]
-                for index in range(len(adyacentes)):
-                    if(adyacentes[index] in p_set_copy):
-                        p_queue.append(adyacentes[index])
-                        conectados.append(adyacentes[index])
-                        p_set_copy.discard(adyacentes[index])
-                        if index == 1:
-                            conected_set.a = conectados[-1]
-                        else:
-                            conected_set.b = conectados[-1]
-            conected_set.set.update(conectados)
-            toReturn.append(conected_set)
+        matrix_copy = self.boolean_matrix_shape.copy()
+        for i in range(self.height):
+            for j in range(self.width):
+                if matrix_copy[i,j]:
+                    p = (i,j)
+                    p_queue: deque[Tuple[int, int]] = deque([p])
+                    conected_set:ConjuntoConectado = ConjuntoConectado({p},p,p)
+                    while p_queue:
+                        p = p_queue.popleft()
+                        i,j = p
+                        if(i<self.height and j<self.width and matrix_copy[i,j]):
+                            matrix_copy[i,j] = False
+                            conected_set.set.add(p)
+                            p_queue.append((i+1,j))
+                            p_queue.append((i,j+1))
+                            p_queue.append((i,j-1))
+                    toReturn.append(conected_set)
         toReturn = sorted(toReturn, key=lambda cc: len(cc.set), reverse=True)
         return toReturn
     
@@ -389,91 +383,4 @@ class MatrixColorService:
     def __sync_matrix_set(self, matrix) -> set[Tuple[int, int]]:
         coords = np.argwhere(matrix)
         return set(map(tuple, coords))
-        
-    def __eliminar_conjuntos_conectados_pequeños(self, connected_set_list: List[ConjuntoConectado]) -> List[ConjuntoConectado]:
-        #delete_factor = (self.height * self.width) / ((self.height + self.width)*22)
-        delete_factor = 4
-        return [c for c in connected_set_list if len(c.set) >= delete_factor]
-    
-    def __puntos_en_conjuntos_conectados(self, connected_set_list: List[ConjuntoConectado]) -> set[Tuple[int,int]]:
-        toReturn = set()
-        for connected_set in connected_set_list:
-            toReturn.update(connected_set.set)
-        return toReturn
-    
-    def __conectar_conjuntos(self, connected_set_list: List[ConjuntoConectado]) -> set[Tuple[int,int]]:
-        while(len(connected_set_list)>1):
-            c1, c2, p1, p2 = self.__conjuntos_y_puntos_mas_cercanos(connected_set_list)
-            if(c1.a != p1):
-                aux = c1.a
-                c1.a = p1
-                c1.b = aux
-            if(c2.a != p2):
-                aux = c2.a
-                c2.a = p2
-                c2.b = aux
-            camino = self.__linea_bresenham(c1.a,c2.a)
-            c1.set.update(c2.set)
-            c1.set.update(camino)
-            c1.a = c2.b
-            connected_set_list.remove(c2)
-        remaining_set = connected_set_list[0]
-        camino = self.__linea_bresenham(remaining_set.a,remaining_set.b)
-        remaining_set.set.update(camino)
-        return remaining_set.set
-    
-    #Retorna los dos conjuntos que tengan los puntos a y b mas cercanos. Compara a1 con a2 y b2, y b1 con a2 y b2
-    def __conjuntos_y_puntos_mas_cercanos(self, connected_set_list: List[ConjuntoConectado]
-    ) -> Tuple[ConjuntoConectado, ConjuntoConectado, Tuple[int, int], Tuple[int, int]]:
-        min_dist = float('inf')
-        resultado = (None, None, None, None)  # (conj1, conj2, punto1, punto2)
-        for i in range(len(connected_set_list)):
-            for j in range(i + 1, len(connected_set_list)):
-                c1 = connected_set_list[i]
-                c2 = connected_set_list[j]
-                puntos_c1 = [c1.a, c1.b]
-                puntos_c2 = [c2.a, c2.b]
-                for p1 in puntos_c1:
-                    for p2 in puntos_c2:
-                        d = self.__distancia(p1, p2)
-                        if d < min_dist:
-                            min_dist = d
-                            resultado = (c1, c2, p1, p2)
-        return resultado
-
-    #Retorna el punto mas cercano a a, tal que sea distinto de a y b.
-    def __punto_mas_cercano(self,puntos: set[Tuple[int, int]], a: Tuple[int, int], b: Tuple[int, int]) -> Tuple[int, int]:
-        return min((p for p in puntos if p != a and p != b), key=lambda p: self.__distancia(p, a))
-
-    def __distancia(self,p1: Tuple[int, int], p2: Tuple[int, int]) -> float:
-        return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
-        #return math.hypot(p1[0] - p2[0], p1[1] - p2[1])
-    
-    #Encuentra el camino de puntos que une dos puntos a y b
-    def __linea_bresenham(self,a: Tuple[int, int], b: Tuple[int, int]) -> list[Tuple[int, int]]:
-        x0, y0 = a
-        x1, y1 = b
-        puntos = []
-
-        dx = abs(x1 - x0)
-        dy = abs(y1 - y0)
-
-        sx = 1 if x0 < x1 else -1
-        sy = 1 if y0 < y1 else -1
-
-        err = dx - dy
-
-        while True:
-            puntos.append((x0, y0))
-            if x0 == x1 and y0 == y1:
-                break
-            e2 = 2 * err
-            if e2 > -dy:
-                err -= dy
-                x0 += sx
-            if e2 < dx:
-                err += dx
-                y0 += sy
-
-        return puntos
             
