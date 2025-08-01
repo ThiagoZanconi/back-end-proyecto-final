@@ -93,6 +93,22 @@ class MatrixColorService:
             next = self.__get_next(next, matrix_copy)
 
         return border_list
+    
+    def matrix_from_list(self, list: List[Tuple[int,int]]) -> NDArray[np.float64]:
+        top = bottom = left = right = list[0]
+        for i,j in list:
+            if(j<left[1]):
+                left=(i,j)
+            if(j>right[1]):
+                right=(i,j)
+            if(i<top[0]):
+                top=(i,j)
+            if(i>bottom[0]):
+                bottom=(i,j)
+        matriz = np.zeros((bottom[0]+1, right[1]+1, 3), dtype=np.float64)
+        for i,j in list:
+            matriz[i,j] = [100,0,0]
+        return matriz
             
     def __get_next(self, p, boolean_matrix) -> Tuple[int, int] | None:
         i, j = p
@@ -252,8 +268,8 @@ class MatrixColorService:
         for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             ni, nj = i + di, j + dj
             if 0 <= ni < self.height and 0 <= nj < self.width:
-                #delta = np.linalg.norm(self.matrix[i, j] - self.matrix[ni, nj])
-                delta = ColorUtils.delta_ciede2000(self.matrix[i, j], self.matrix[ni, nj])
+                delta = np.linalg.norm(self.matrix[i, j] - self.matrix[ni, nj])
+                #delta = ColorUtils.delta_ciede2000(self.matrix[i, j], self.matrix[ni, nj])
                 max_delta = max(max_delta, delta)
 
         return max_delta
@@ -370,6 +386,7 @@ class MatrixColorService:
                             p_queue.append((i+1,j))
                             p_queue.append((i,j+1))
                             p_queue.append((i,j-1))
+                            p_queue.append((i-1,j))
                     toReturn.append(conected_set)
         toReturn = sorted(toReturn, key=lambda cc: len(cc.set), reverse=True)
         return toReturn

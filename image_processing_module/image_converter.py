@@ -1,4 +1,4 @@
-from typing import Any, Counter, Tuple
+from typing import Any, Counter, List, Tuple
 from matplotlib import pyplot as plt
 from numpy.typing import NDArray
 from PIL import Image
@@ -142,6 +142,15 @@ def __paint_column_segment(original_matrix: NDArray[np.float64], color: np.ndarr
         original_matrix[end_point-i,j] = color
     return original_matrix
 
+def border_list(path:str)-> List[Tuple[int,int]]:
+    sword_image = Image.open(path).convert("RGB")  # Asegura que sea RGB
+    # Convertir a matriz NumPy
+    matriz_1024x1024: NDArray[np.uint8] = np.array(sword_image)
+    matriz_128 = reducir_imagen(matriz_1024x1024, (256, 256))
+    lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(matriz_128)
+    matrix_color_service = MatrixColorService(lab_matrix, delta_threshold = 10)
+    return matrix_color_service.border_list()
+
 '''
 # Abrir la imagen
 sword_image = Image.open("resources/pixel_sword_1024x1024.png").convert("RGB")  # Asegura que sea RGB
@@ -166,14 +175,6 @@ resultado = draw_main_colors(resultado,4)
 resultado = ShapeFinder.find_shape(resultado,5)
 '''
 
-sword_image = Image.open("resources/pixel_sword_4.png").convert("RGB")  # Asegura que sea RGB
-# Convertir a matriz NumPy
-matriz_1024x1024: NDArray[np.uint8] = np.array(sword_image)
-matriz_128 = reducir_imagen(matriz_1024x1024, (256, 256))
-lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(matriz_128)
-matrix_color_service = MatrixColorService(lab_matrix, delta_threshold = 10)
-resultado = matrix_color_service.border()
-
 '''
 resultado = matrix_color_service.expansion_bfs(n=20,delta_threshold=20)
 #resultado = unify_sub_matrices_color(resultado,div_factor=128)
@@ -183,5 +184,12 @@ resultado = matrix_color_service.expansion_bfs(n=20,delta_threshold=20)
 #resultado = fill_image_gaps(resultado,5)
 '''
 
-rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(resultado)
-Image.fromarray(rgb_matrix).show()
+images = ["resources/pixel_sword_2.png","resources/pixel_sword_3.png","resources/pixel_sword_4.png"]
+images_borders = []
+for image in images:
+    images_borders.append(border_list(image))
+
+
+
+#rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(resultado)
+#Image.fromarray(rgb_matrix).show()
