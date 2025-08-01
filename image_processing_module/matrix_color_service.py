@@ -1,5 +1,6 @@
 from collections import Counter, deque
 from dataclasses import dataclass
+import time
 from typing import List, Tuple
 from numpy.typing import NDArray
 import numpy as np
@@ -19,12 +20,10 @@ class ConjuntoConectado:
 
 class MatrixColorService:
     matrix: NDArray[np.float64]
-    matrix_shape: NDArray[np.float64]
     boolean_matrix_shape: NDArray[np.bool_]
     boolean_matrix_border: NDArray[np.bool_]
     background_set: set[Tuple[int,int]]
     shape_set: set[Tuple[int,int]]
-    border_set: set[Tuple[int,int]]
     height: int
     width: int
 
@@ -35,10 +34,8 @@ class MatrixColorService:
         self.height, self.width, lab = matrix.shape
         self.matrix = matrix
         self.boolean_matrix_shape = np.zeros((self.height, self.width), dtype=bool)
-        self.matrix_shape = np.empty_like(self.matrix)
         self.background_set = set()
         self.shape_set = set()
-        self.border_set = set()
         self.__shape_matrix(delta_threshold)
         for i in range(self.height):
             for j in range(self.width):
@@ -58,6 +55,54 @@ class MatrixColorService:
                     matriz_sin_fondo[i,j] = [0,0,0]
         return matriz_sin_fondo
     
+    def border(self) -> NDArray[np.float64]:
+        border_matrix = np.empty_like(self.matrix)
+        for i in range(self.height):
+            for j in range(self.width):
+                if(self.boolean_matrix_border[i,j]):
+                    border_matrix[i,j] = [100,0,0]
+                else:
+                    border_matrix[i,j] = [0,0,0]
+
+        return border_matrix
+    
+    def border_list(self) -> List[Tuple[int,int]]:
+        i, j = -1, -1
+        stop = False
+        matrix_copy = self.boolean_matrix_border.copy()
+        border_list = []
+        while(i<self.height-1 and not stop):
+            i += 1
+            j = -1
+            while(j<self.width-1 and not stop):
+                j+=1
+                if(matrix_copy[i,j]):
+                    stop = True
+        matrix_copy[i,j] = False
+        border_list.append((i,j))
+        next: Tuple[int,int]|None = None
+        if j + 1 < self.width and matrix_copy[i, j + 1]:
+            next = (i, j + 1)
+        elif i + 1 < self.height and matrix_copy[i + 1, j]:
+            next = (i + 1, j)
+        else:
+            next = None
+        while(next):
+            border_list.append(next)
+            matrix_copy[next[0],next[1]] = False
+            next = self.__get_next(next, matrix_copy)
+
+        return border_list
+            
+    def __get_next(self, p, boolean_matrix) -> Tuple[int, int] | None:
+        i, j = p
+        adyacentes = [(i, j + 1), (i + 1, j + 1), (i + 1, j), (i + 1, j - 1), (i, j - 1), (i - 1, j - 1), (i - 1, j), (i - 1, j + 1)]
+        for ai, aj in adyacentes:
+            if 0 <= ai < self.height and 0 <= aj < self.width:
+                if boolean_matrix[ai, aj]:
+                    return (ai, aj)
+        return None
+
     '''
     Algoritmo de expansion:
     Estructuras:
@@ -179,18 +224,18 @@ class MatrixColorService:
                 p_queue.append(p)
 
     def __shape_matrix(self, threshold) -> NDArray[np.float64]:
+        start = time.perf_counter()
         self.__calculate_matrix_delta(threshold)
+        end_delta = time.perf_counter()
+        print(f"Tiempo de ejecución: {end_delta - start:.6f} segundos")
         self.__connect_borders()
         self.__fill_gaps()
         connected_sets = self.__conjuntos_conectados()
         self.__keep_bigger_sets(connected_sets)
         self.__tapar_picos_negros()
         self.__extraer_borde_numpy()
-        self.__conectar_diagonales(self.boolean_matrix_shape)
-        self.__conectar_diagonales(self.boolean_matrix_border)
-        self.shape_set = self.__sync_matrix_set(self.boolean_matrix_shape)
-        self.border_set = self.__sync_matrix_set(self.boolean_matrix_border)
-        return self.matrix_shape 
+        end = time.perf_counter()
+        print(f"Tiempo de ejecución: {end - start:.6f} segundos")
     
     def __calculate_matrix_delta(self,threshold):
         for i in range(self.height):
@@ -198,6 +243,7 @@ class MatrixColorService:
                 delta = self.__delta_vecinos((i,j))
                 if delta>threshold:
                     self.boolean_matrix_shape[i,j] = True
+                    self.shape_set.add((i,j))
         
     def __delta_vecinos(self, p: Tuple[int, int]) -> np.float64:
         i, j = p
@@ -206,6 +252,7 @@ class MatrixColorService:
         for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             ni, nj = i + di, j + dj
             if 0 <= ni < self.height and 0 <= nj < self.width:
+                #delta = np.linalg.norm(self.matrix[i, j] - self.matrix[ni, nj])
                 delta = ColorUtils.delta_ciede2000(self.matrix[i, j], self.matrix[ni, nj])
                 max_delta = max(max_delta, delta)
 
@@ -221,6 +268,7 @@ class MatrixColorService:
                 if(left_column_length != 0):
                     for n in range(i, i - left_column_length, -1):
                         self.boolean_matrix_shape[n,0] = True
+                        self.shape_set.add((n,0))
                 left_column_length = 1
             elif left_column_length!=0:
                 left_column_length+=1
@@ -229,6 +277,7 @@ class MatrixColorService:
                 if(right_column_length != 0):
                     for n in range(i, i - right_column_length, -1):
                         self.boolean_matrix_shape[n,self.width-1] = True
+                        self.shape_set.add((n,self.width-1))
                 right_column_length = 1
             elif right_column_length!=0:
                 right_column_length+=1
@@ -238,6 +287,7 @@ class MatrixColorService:
                 if(top_row_length != 0):
                     for n in range(j, j - top_row_length, -1):
                         self.boolean_matrix_shape[0,n] = True
+                        self.shape_set.add((0,n))
                 top_row_length = 1
             elif top_row_length!=0:
                 top_row_length+=1
@@ -246,12 +296,12 @@ class MatrixColorService:
                 if(bottom_row_length != 0):
                     for n in range(j, j - bottom_row_length, -1):
                         self.boolean_matrix_shape[self.height-1,n] = True
+                        self.shape_set.add((self.height-1,n))
                 bottom_row_length = 1
             elif bottom_row_length!=0:
                 bottom_row_length+=1
     
     def __fill_gaps(self):
-        self.shape_set = self.__sync_matrix_set(self.boolean_matrix_shape)
         border_set = self.shape_set.copy()
         while(border_set):
             adyacentes_not_in_set: set[Tuple[int,int]] = self.__obtener_adyacentes_not_in_set(border_set)
@@ -260,7 +310,7 @@ class MatrixColorService:
     def __obtener_adyacentes_not_in_set(self, border_set: set[Tuple[int,int]]):
         toReturn: set[Tuple[int,int]] = set()
         for i,j in iter(border_set):
-            vecinos = [(i-1,j-1), (i,j-1), (i-1,j), (i+1,j), (i,j+1), (i-1,j+1), (i+1,j-1), (i+1,j+1)]
+            vecinos = [ (i,j-1), (i-1,j), (i+1,j), (i,j+1)]
             for vi,vj in vecinos:
                 if( 0 <= vi < self.height and 0 <= vj < self.width and not self.boolean_matrix_shape[vi,vj]):
                     toReturn.add((vi,vj))
@@ -272,7 +322,6 @@ class MatrixColorService:
 
         col_map = defaultdict(set)  # j -> set of i
         row_map = defaultdict(set)  # i -> set of j
-
         for i, j in self.shape_set:
             col_map[j].add(i)
             row_map[i].add(j)
@@ -286,37 +335,11 @@ class MatrixColorService:
 
             if (arriba and abajo and izq and der):
                 self.boolean_matrix_shape[i,j] = True
+                self.shape_set.add((i,j))
                 added.add((i, j))
 
         return added
-
-    #Conecta los puntos que solo estan unidos por diagonales, de forma directa
-    def __conectar_diagonales(self, boolean_matrix: NDArray[np.bool_]):
-        
-        p_queue: deque[Tuple[int, int]] = deque(self.shape_set)
-        while(p_queue):
-            p = p_queue.popleft()
-            i,j = p
-            vecinos_diagonales = self.__obtener_adyacentes_diagonales(p, boolean_matrix)
-            for v in vecinos_diagonales:
-                vi, vj = v
-                if(not boolean_matrix[i, vj]) and (not boolean_matrix[vi, j]):
-                    boolean_matrix[i,vj] = True
-                    p_queue.append((i,vj))
                     
-    def __obtener_adyacentes_diagonales(self, p: Tuple[int, int], boolean_matrix: NDArray[np.bool_]) -> List[Tuple[int, int]]:
-        i, j = p
-        vecinos_diagonales = [(-1, -1), (1, -1), (-1, 1), (1, 1)]
-        adyacentes = []
-
-        for di, dj in vecinos_diagonales:
-            ni, nj = i + di, j + dj
-            if 0 <= ni < self.height and 0 <= nj < self.width:
-                if boolean_matrix[ni, nj]:
-                    adyacentes.append((ni, nj))
-
-        return adyacentes
-    
     def __extraer_borde_numpy(self):
         padded = np.pad(self.boolean_matrix_shape, pad_width=1, mode='constant', constant_values=0)
         centro = self.boolean_matrix_shape
@@ -327,6 +350,7 @@ class MatrixColorService:
 
         erosionada = centro & arriba & abajo & izquierda & derecha
         self.boolean_matrix_border = centro & ~erosionada
+        self.shape_set = self.__sync_matrix_set(self.boolean_matrix_shape)
     
     def __conjuntos_conectados(self) -> List[ConjuntoConectado]:
         toReturn: List[ConjuntoConectado] = []
@@ -355,6 +379,7 @@ class MatrixColorService:
         for n in range(n,length):
             for i,j in connected_sets[n].set:
                 self.boolean_matrix_shape[i,j] = False
+                self.shape_set.discard((i,j))
     
     def __tapar_picos_negros(self, factor = 8):
         for i in range(self.height):
@@ -366,6 +391,7 @@ class MatrixColorService:
                     if black_row<factor:
                         for n in range(j-1, j-black_row-2, -1):
                             self.boolean_matrix_shape[i,n] = True
+                            self.shape_set.add((i,n))
                     black_row = 0
 
         for j in range(self.width):
@@ -377,6 +403,7 @@ class MatrixColorService:
                     if black_row<factor:
                         for n in range(i-1, i-black_row-2, -1):
                             self.boolean_matrix_shape[n,j] = True
+                            self.shape_set.add((n,j))
                     black_row = 0
 
     def __sync_matrix_set(self, matrix) -> set[Tuple[int, int]]:

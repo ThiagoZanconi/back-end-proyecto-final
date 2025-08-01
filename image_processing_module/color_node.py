@@ -1,16 +1,10 @@
 from __future__ import annotations
-from enum import Enum
-import numpy as np
 
-class Pos(Enum):
-    UP = 1
-    DOWN = 2
-    LEFT = 3
-    RIGHT = 4
-
-class ColorNode:
-    next: ColorNode
-    prev: ColorNode
-    next_relative_pos: Pos
-    prev_relative_pos: Pos
-    color: np.ndarray
+class ShapeNode:
+    id: int  # ID único del nodo (usado como clave primaria en la DB)
+    next_id: int  # ID del siguiente nodo (clave foránea a otro ColorNode)
+    prev_id: int  # ID del nodo anterior (clave foránea a otro ColorNode)
+    next_i: int
+    next_j: int
+    prev_i: int
+    prev_j: int
