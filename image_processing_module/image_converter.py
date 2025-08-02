@@ -4,6 +4,7 @@ from numpy.typing import NDArray
 from PIL import Image
 import numpy as np
 from color_utils import ColorUtils
+from shape_analyzer_service import ShapeAnalyzerService
 from matrix_color_service import MatrixColorService
 from shape_finder import ShapeFinder
 
@@ -151,6 +152,14 @@ def border_list(path:str)-> List[Tuple[int,int]]:
     matrix_color_service = MatrixColorService(lab_matrix, delta_threshold = 10)
     return matrix_color_service.border_list()
 
+def graficar_segmentos(segmentos: List[Tuple[Tuple[int, int], Tuple[int, int]]]):
+    for (i1, j1), (i2, j2) in segmentos:
+        plt.plot([j1, j2], [i1, i2], 'bo-')  # columna (x), fila (y)
+
+    plt.gca().set_aspect('equal')
+    plt.gca().invert_yaxis()  # Para que (0,0) esté arriba a la izquierda
+    plt.grid(True)
+    plt.show()
 '''
 # Abrir la imagen
 sword_image = Image.open("resources/pixel_sword_1024x1024.png").convert("RGB")  # Asegura que sea RGB
@@ -166,28 +175,15 @@ resultado = unify_sub_matrices_color(resultado,div_factor=32)
 resultado = blacken_background(resultado)
 resultado = fill_image_gaps(resultado,5)
 '''
-'''
-resultado = Image.open("resources/pixel_sword_processed.png").convert("RGB")  # Asegura que sea RGB
-resultado: NDArray[np.uint8] = np.array(resultado)
-resultado = ColorUtils.transform_matrix_from_rgb_to_lab(resultado)
-#resultado = draw_shape(resultado)
-resultado = draw_main_colors(resultado,4)
-resultado = ShapeFinder.find_shape(resultado,5)
-'''
 
-'''
-resultado = matrix_color_service.expansion_bfs(n=20,delta_threshold=20)
-#resultado = unify_sub_matrices_color(resultado,div_factor=128)
-#resultado = unify_sub_matrices_color(resultado,div_factor=64)
-#resultado = unify_sub_matrices_color(resultado,div_factor=32)
-#resultado = blacken_background(resultado)
-#resultado = fill_image_gaps(resultado,5)
-'''
-
-images = ["resources/pixel_sword_2.png","resources/pixel_sword_3.png","resources/pixel_sword_4.png"]
+images = ["resources/pixel_sword_1024x1024.png"]
 images_borders = []
 for image in images:
     images_borders.append(border_list(image))
+
+shape_analyzer_service = ShapeAnalyzerService(images_borders)
+print(shape_analyzer_service.shape_lines[0])
+graficar_segmentos(shape_analyzer_service.shape_lines[0])
 
 
 
