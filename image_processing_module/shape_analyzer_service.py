@@ -1,15 +1,15 @@
+import heapq
 import math
 from typing import List, Tuple
 
 class ShapeAnalyzerService:
     shapes: List[List[Tuple[int,int]]]
-    ANGLE_THRESHOLD = 0.175
     shape_lines: List[List[Tuple[Tuple[int,int],Tuple[int,int]]]]
 
-    def __init__(self, shapes: List[List[Tuple[int,int]]]):
+    def __init__(self, shapes: List[List[Tuple[int,int]]], n = 20):
         self.shapes = shapes
         self.shape_lines = []
-        self.__descomponer_rectas()
+        self.__descomponer_rectas(n)
         #self.__analyze()
 
     def __analyze(self):
@@ -29,47 +29,47 @@ class ShapeAnalyzerService:
                 elif (dx, dy) == (-1, 0): chain_code.append(6)  # arriba
                 elif (dx, dy) == (-1, 1): chain_code.append(7)  # arriba, derecha
 
-    def  __descomponer_rectas(self, n = 30):
+    def  __descomponer_rectas(self, n):
         for shape in self.shapes:
-            rectas: List[Tuple[int,int]] = []
+            rectas_pq: List[Tuple[int, Tuple[int, int]]] = []
+            segmentos_agregados: set[Tuple[int,int]] = set()
             restantes: List[int] = []
+            to_be_connected: List[int] = []
             length = len(shape)
-            
             for i in range(length):
                 restantes.append(i)
+
             while(restantes):
                 candidatos: List[Tuple[int,int,float]] = []
-                print("Restantes: ",restantes)
-                for index in range(len(restantes)):
-                    i = restantes[index]
+                for i in restantes:
                     last_not_used = n + i
-                    while(last_not_used%length not in restantes):
-                        last_not_used-=1
-                        if(last_not_used == -1):
-                            last_not_used = length -1
-                    x1,y1 = shape[i]
-                    x2,y2 = shape[((i+last_not_used)//2)%length]
-                    x3,y3 = shape[(last_not_used)%length]
-                    a12 = math.atan2(y2-y1, x2-x1) 
-                    a13 = math.atan2(y3-y1, x3-x1)
-                    delta = self.__comparar_angulos(a12,a13)
-                    segment_length = last_not_used - i
-                    if(last_not_used<i):
-                        segment_length += length
-                    candidatos.append((i,segment_length,delta))
+                    while (last_not_used % length not in restantes):
+                        last_not_used -= 1
+                        if last_not_used == -1:
+                            last_not_used = length - 1
+
+                    segment_length = (last_not_used - i) % length
+                    delta = self._comparar_angulo_rectas(shape[i], shape[(i + (segment_length // 2)) % length], shape[last_not_used%length])
+                    extremos = tuple(sorted((i, (i + segment_length) % length)))
+                    if(segment_length!=0 and extremos not in segmentos_agregados):
+                        candidatos.append((i,segment_length,delta))
+
                 candidatos.sort(key=lambda x: x[2])
-                delta:float = 0.0
-                while(delta < self.ANGLE_THRESHOLD and candidatos):
-                    i,segment_length,delta = candidatos.pop(0)
-                    if(delta < self.ANGLE_THRESHOLD):
-                        rectas.append((shape[i], shape[(i+n)%length]))
-                        indices = [(i + j + 1) % length for j in range(segment_length)]
-                        # Para evitar errores al modificar mientras iterás, creás nueva lista
-                        candidatos = [(i,segment_length,delta) for i,segment_length, delta in candidatos if i not in indices]
-                        restantes = [i for i in restantes if i not in indices]
-                n = max(1, math.floor(n * 0.9))
-                if n <= 2:
-                    break
+                i,segment_length,delta = candidatos.pop(0)
+                heapq.heappush(rectas_pq, (i, (shape[i], shape[(i + segment_length) % length])))
+                extremos = tuple(sorted((i, (i + segment_length) % length)))
+                segmentos_agregados.add(extremos)
+                indices = [(i + j + 1) % length for j in range(segment_length-1)]
+                #Eliminamos los indices de las listas
+                restantes = [ii for ii in restantes if not ii in indices]
+                for extremo in [i, (i + segment_length) % length]:
+                    if extremo in to_be_connected:
+                        to_be_connected.remove(extremo)
+                        restantes.remove(extremo)
+                    else:
+                        to_be_connected.append(extremo)
+
+            rectas = [heapq.heappop(rectas_pq)[1] for _ in range(len(rectas_pq))]
             self.shape_lines.append(rectas)
             
     #Delta entre [0, π/2]
@@ -81,3 +81,11 @@ class ShapeAnalyzerService:
         if delta > math.pi:
             delta = 2*math.pi - delta
         return delta
+    
+    def _comparar_angulo_rectas(self, p1:Tuple[int,int], p2: Tuple[int,int], p3:Tuple[int,int]) -> float:
+        x1,y1 = p1
+        x2,y2 = p2
+        x3,y3 = p3
+        a12 = math.atan2(y2-y1, x2-x1) 
+        a13 = math.atan2(y3-y1, x3-x1)
+        return self.__comparar_angulos(a12,a13)
