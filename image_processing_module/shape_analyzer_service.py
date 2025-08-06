@@ -3,19 +3,19 @@ import math
 from typing import Dict, List, Tuple
 
 class ShapeAnalyzerService:
-    shapes: List[List[Tuple[int,int]]]
-    shape_lines: List[List[Tuple[Tuple[int,int],Tuple[int,int]]]]
+    shape_list: List[List[Tuple[int,int]]]
+    shape_segment_list: List[List[Tuple[Tuple[int,int],Tuple[int,int]]]]
     segment_point_map_list: List[ Dict[Tuple[int,int], List[Tuple[int,int]]] ]
 
     def __init__(self, shapes: List[List[Tuple[int,int]]], n = 20):
-        self.shapes = shapes
-        self.shape_lines = []
+        self.shape_list = shapes
+        self.shape_segment_list = []
         self.segment_point_map_list = []
         self.__descomponer_rectas(n)
         #self.__analyze()
 
     def __analyze(self):
-        for shape in self.shapes:
+        for shape in self.shape_list:
             directions = []
             chain_code = []
             for (x1, y1), (x2, y2) in zip(shape, shape[1:] + [shape[0]]):  # circular
@@ -32,7 +32,7 @@ class ShapeAnalyzerService:
                 elif (dx, dy) == (-1, 1): chain_code.append(7)  # arriba, derecha
 
     def  __descomponer_rectas(self, n):
-        for shape in self.shapes:
+        for shape in self.shape_list:
             rectas_pq: List[Tuple[int, Tuple[int, int]]] = []
             segmentos_agregados: set[Tuple[int,int]] = set()
             segment_point_map: Dict[ Tuple[int,int], List[Tuple[int,int]]] = {}
@@ -77,7 +77,7 @@ class ShapeAnalyzerService:
                         to_be_connected.append(extremo)
             rectas = [heapq.heappop(rectas_pq)[1] for _ in range(len(rectas_pq))]
             self.segment_point_map_list.append(segment_point_map)
-            self.shape_lines.append(rectas)
+            self.shape_segment_list.append(rectas)
             
     #Delta entre [0, π/2]
     def __comparar_angulos(self, angle1, angle2) -> float:
@@ -96,3 +96,6 @@ class ShapeAnalyzerService:
         a12 = math.atan2(y2-y1, x2-x1) 
         a13 = math.atan2(y3-y1, x3-x1)
         return self.__comparar_angulos(a12,a13)
+    
+    def corrimiento_circular_inplace(lista: List, i:int):
+        lista[:] = lista[i:] + lista[:i]
