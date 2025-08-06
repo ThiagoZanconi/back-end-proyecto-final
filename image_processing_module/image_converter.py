@@ -181,8 +181,8 @@ images_borders = []
 for image in images:
     images_borders.append(border_list(image))
 
-shape_analyzer_service = ShapeAnalyzerService(images_borders,50)
-
+shape_analyzer_service = ShapeAnalyzerService(images_borders,20)
+print(shape_analyzer_service.shape_lines[0])
 graficar_segmentos(shape_analyzer_service.shape_lines[0])
 
 

@@ -1,14 +1,16 @@
 import heapq
 import math
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 class ShapeAnalyzerService:
     shapes: List[List[Tuple[int,int]]]
     shape_lines: List[List[Tuple[Tuple[int,int],Tuple[int,int]]]]
+    segment_point_map_list: List[ Dict[Tuple[int,int], List[Tuple[int,int]]] ]
 
     def __init__(self, shapes: List[List[Tuple[int,int]]], n = 20):
         self.shapes = shapes
         self.shape_lines = []
+        self.segment_point_map_list = []
         self.__descomponer_rectas(n)
         #self.__analyze()
 
@@ -33,6 +35,7 @@ class ShapeAnalyzerService:
         for shape in self.shapes:
             rectas_pq: List[Tuple[int, Tuple[int, int]]] = []
             segmentos_agregados: set[Tuple[int,int]] = set()
+            segment_point_map: Dict[ Tuple[int,int], List[Tuple[int,int]]] = {}
             restantes: List[int] = []
             to_be_connected: List[int] = []
             length = len(shape)
@@ -50,26 +53,30 @@ class ShapeAnalyzerService:
 
                     segment_length = (last_not_used - i) % length
                     delta = self._comparar_angulo_rectas(shape[i], shape[(i + (segment_length // 2)) % length], shape[last_not_used%length])
-                    extremos = tuple(sorted((i, (i + segment_length) % length)))
+                    extremos = ((i, (i + segment_length) % length))
                     if(segment_length!=0 and extremos not in segmentos_agregados):
                         candidatos.append((i,segment_length,delta))
 
                 candidatos.sort(key=lambda x: x[2])
                 i,segment_length,delta = candidatos.pop(0)
                 heapq.heappush(rectas_pq, (i, (shape[i], shape[(i + segment_length) % length])))
-                extremos = tuple(sorted((i, (i + segment_length) % length)))
+                extremos = ((i, (i + segment_length) % length))
                 segmentos_agregados.add(extremos)
                 indices = [(i + j + 1) % length for j in range(segment_length-1)]
-                #Eliminamos los indices de las listas
-                restantes = [ii for ii in restantes if not ii in indices]
+                point_list: List[Tuple[int,int]] = [i]
+                for ii in indices:
+                    restantes.remove(ii)
+                    point_list.append(shape[ii])
+                point_list.append(shape[(i + segment_length) % length])
+                segment_point_map[(i, (i + segment_length) % length)] = point_list
                 for extremo in [i, (i + segment_length) % length]:
                     if extremo in to_be_connected:
                         to_be_connected.remove(extremo)
                         restantes.remove(extremo)
                     else:
                         to_be_connected.append(extremo)
-
             rectas = [heapq.heappop(rectas_pq)[1] for _ in range(len(rectas_pq))]
+            self.segment_point_map_list.append(segment_point_map)
             self.shape_lines.append(rectas)
             
     #Delta entre [0, π/2]
