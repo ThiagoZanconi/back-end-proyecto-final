@@ -1,3 +1,4 @@
+import math
 from typing import Any, Counter, List, Tuple
 from matplotlib import pyplot as plt
 from numpy.typing import NDArray
@@ -165,6 +166,18 @@ def graficar_segmentos(segmentos: List[Tuple[Tuple[int, int], Tuple[int, int]]])
     plt.gca().invert_yaxis()  # Para que (0,0) esté arriba a la izquierda
     plt.grid(True)
     plt.legend()
+    plt.show()
+
+def graficar_segmentos_polares(segmentos: List[Tuple[float, float]]):
+    x, y = 0, 0
+    for angle, length in segmentos:
+        x2 = x + length * math.cos(angle)
+        y2 = y + length * math.sin(angle)
+        plt.plot([x, x2], [y, y2], 'bo-')
+        x, y = x2, y2  # mover al nuevo punto
+
+    plt.gca().set_aspect('equal')
+    plt.grid(True)
     plt.show()
 '''
 # Abrir la imagen

@@ -79,6 +79,14 @@ class ShapeAnalyzerService:
             self.segment_point_map_list.append(segment_point_map)
             self.shape_segment_list.append(rectas)
             
+    def _comparar_angulo_rectas(self, p1:Tuple[int,int], p2: Tuple[int,int], p3:Tuple[int,int]) -> float:
+        x1,y1 = p1
+        x2,y2 = p2
+        x3,y3 = p3
+        a12 = math.atan2(y2-y1, x2-x1) 
+        a13 = math.atan2(y3-y1, x3-x1)
+        return self.__comparar_angulos(a12,a13)
+    
     #Delta entre [0, π/2]
     def __comparar_angulos(self, angle1, angle2) -> float:
         delta = abs(angle1 - angle2)
@@ -88,14 +96,6 @@ class ShapeAnalyzerService:
         if delta > math.pi:
             delta = 2*math.pi - delta
         return delta
-    
-    def _comparar_angulo_rectas(self, p1:Tuple[int,int], p2: Tuple[int,int], p3:Tuple[int,int]) -> float:
-        x1,y1 = p1
-        x2,y2 = p2
-        x3,y3 = p3
-        a12 = math.atan2(y2-y1, x2-x1) 
-        a13 = math.atan2(y3-y1, x3-x1)
-        return self.__comparar_angulos(a12,a13)
     
     def corrimiento_circular_inplace(lista: List, i:int):
         lista[:] = lista[i:] + lista[:i]
