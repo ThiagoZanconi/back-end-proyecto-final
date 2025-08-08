@@ -3,28 +3,33 @@ import math
 import random
 from typing import List, Tuple
 
-class SegmentAnalyzerService:
-    shape_segment_list: List[List[Tuple[Tuple[int,int],Tuple[int,int]]]]
-    grouped_shapes_segments: List[List[List[Tuple[ Tuple[int,int], Tuple[int,int] ]]]] = []
-    segment_group_shape_anlge_length_list: List[List[Tuple[float,float]]] = []
-    DELTA_THRESHOLD = 0.2
-    n:int = 15
+from image_processing_module.shape_analyzer_service import Segment
 
-    def __init__(self, shape_segment_list: List[List[Tuple[Tuple[int,int],Tuple[int,int]]]], n: int = 15):
+class SegmentAnalyzerService:
+    #Primera lista (shapes). Segunda lista (segmentos)
+    shape_segment_list: List[List[Segment]]
+    #Primera lista (shapes). Segunda lista (n grupos por distancia). Tercera lista (segmentos)
+    grouped_shapes_segments: List[List[List[Segment]]] = []
+    #Primer lista de n grupos. Segunda lista de grupos de segmentos que tienen extremos parecidos (en terminos relativos). Tercera lista (segmentos).
+    similar_segments:list[list[List[Tuple[int,int]]]] = []
+    n:int
+
+    def __init__(self, shape_segment_list: List[List[Segment]], n: int = 15):
         self.shape_segment_list = shape_segment_list
         self.n = n
         self.__group_segments_by_length()
+        self.__compare_segmet_groups_extremes_relative_distance()
 
     def __group_segments_by_length(self):
-        for shape_segment in self.shape_segment_list:
-            shape_length = self.__shape_length(shape_segment)
+        for segment_list in self.shape_segment_list:
+            shape_length = self.__shape_length(segment_list)
             target = shape_length / self.n
 
-            grupos: List[List[Tuple[ Tuple[int,int], Tuple[int,int] ]]] = []
-            grupo_actual: List[Tuple[ Tuple[int,int], Tuple[int,int] ]] = []
+            grupos: List[List[Segment]] = []
+            grupo_actual: List[Segment] = []
             acum = 0.0
 
-            for seg in shape_segment:
+            for seg in segment_list:
                 l = self.__segment_length(seg)
                 if acum + l > target and len(grupos) < self.n - 1:
                     grupos.append(grupo_actual)
@@ -34,42 +39,32 @@ class SegmentAnalyzerService:
                 acum += l
 
             grupos.append(grupo_actual)  # último grupo
-            self.grouped_shapes_segments.append(grupos)
+            self.grouped_shapes_segments.append(grupos)  
 
-        #Calcula para grupo de segmentos el largo y el angulo del segmento resultante entre el primer y ultimo punto del grupo de segmentos.
-    def __calculate_segment_group_angle_and_length(self):
-        for grouped_shape_segments in self.grouped_shapes_segments:
-            segment_group_anlge_length_list: List[Tuple[float,float]] = []
-            for grouped_segments in grouped_shape_segments:
-                p1 = grouped_segments[0][0]
-                p2 = grouped_segments[-1][1]
-                angle = math.atan2(p2[1]-p1[1], p2[0]-p1[0])
-                length = self.__segment_length(p1,p2)
-                segment_group_anlge_length_list.append((angle,length))
-            self.segment_group_shape_anlge_length_list.append(segment_group_anlge_length_list)
-
-    def __compare_angle_segment_length(self):
-        similar_segments = []
+    def __compare_segmet_groups_extremes_relative_distance(self):
         for i in range(self.n):
-            segment_groups_i = [[self.segment_group_shape_anlge_length_list[0]]]
-            for segment_group_shape_anlge_length in self.segment_group_shape_anlge_length_list[1:]:
-                segment = segment_group_shape_anlge_length[i]
+            segment_groups_i = [[self.grouped_shapes_segments[0][i]]]
+            for segment_shape_group in self.grouped_shapes_segments[1:]:
+                current_segment_group = segment_shape_group[i]
+                p1 = current_segment_group[0].first
+                p2 = current_segment_group[-1].last
                 inserted = False
                 for segment_group in segment_groups_i:
                     r = random.choice(segment_group)
-                    if (self.__similar_segments(segment, r)):
-                        segment_group.append(segment)
+                    p3 = r[0].first
+                    p4 = r[-1].last
+                    if (self.__similar_segments(p1, p2, p3, p4)):
+                        segment_group.append(current_segment_group)
                         inserted = True
                         break
                 if not inserted:
-                    segment_groups_i.append([segment])
-            similar_segments.append(max(segment_groups_i, key=len))
-                        
+                    segment_groups_i.append([current_segment_group])
+            self.similar_segments.append(max(segment_groups_i, key=len))                     
 
-    def __shape_length(self, shape_segments: List[Tuple[ Tuple[int,int], Tuple[int,int]]]) -> float:
+    def __shape_length(self, segment_list: List[Segment]) -> float:
         length = 0.0
-        for a,b in shape_segments:
-            length+= self.__segment_length(a,b)
+        for segment in segment_list:
+            length+= self.__segment_length(segment.first,segment.last)
         return length
 
     def __segment_length(self, a: Tuple[int,int], b: Tuple[int,int]) -> float:
@@ -79,9 +74,28 @@ class SegmentAnalyzerService:
         dy = by-ay
         return sqrt(dx**2 + dy**2)
     
+    def __similar_segments(self, p1:Tuple[int,int], p2:Tuple[int,int] ,p3:Tuple[int,int] ,p4:Tuple[int,int] ) -> bool:
+        x1,y1 = p1
+        x2,y2 = p2
+        x3,y3 = p3
+        x4,y4 = p4
+        dx1, dy1 = x2 - x1, y2 - y1
+        dx2, dy2 = x4 - x3, y4 - y3
+        tolerancia = 0.10  # 10%
+
+        if (self.__diferencia_relativa(dx1, dx2) <= tolerancia and self.__diferencia_relativa(dy1, dy2) <= tolerancia):
+            return True
+        else:
+            return False
+    
+    def __diferencia_relativa(self, a, b):
+        if a == 0:
+            return abs(b) < 1e-9  # o considerar esto como 100% si a es cero
+        return abs(a - b) / abs(a)
+
     #Tuple[angle,length]
     #Retorna true si son similares los segmentos
-    def __similar_segments(self, s1: Tuple[float,float], s2: Tuple[float,float]):
+    def __similar_segments_v2(self, s1: Tuple[float,float], s2: Tuple[float,float]):
         a1, l1 = s1
         a2, l2 = s2
         base = max(l1, l2, 1e-6)  # Evita división por cero

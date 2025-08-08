@@ -5,7 +5,7 @@ from numpy.typing import NDArray
 from PIL import Image
 import numpy as np
 from color_utils import ColorUtils
-from shape_analyzer_service import ShapeAnalyzerService
+from shape_analyzer_service import Segment, ShapeAnalyzerService
 from matrix_color_service import MatrixColorService
 from shape_finder import ShapeFinder
 
@@ -153,14 +153,17 @@ def border_list(path:str)-> List[Tuple[int,int]]:
     matrix_color_service = MatrixColorService(lab_matrix, delta_threshold = 10)
     return matrix_color_service.border_list()
 
-def graficar_segmentos(segmentos: List[Tuple[Tuple[int, int], Tuple[int, int]]]):
+def graficar_segmentos(segmentos: List[Segment]):
     if not segmentos:
         return
     # Graficar el primer segmento en rojo
-    (i1, j1), (i2, j2) = segmentos[0]
+    (i1, j1) = segmentos[0].first
+    (i2, j2) = segmentos[0].last
     plt.plot([j1, j2], [i1, i2], 'ro-', label='Primer segmento')  # 'r' = rojo
     # Graficar el resto en azul
-    for (i1, j1), (i2, j2) in segmentos[1:]:
+    for segment in segmentos[1:]:
+        (i1, j1) = segment.first
+        (i2, j2) = segment.last
         plt.plot([j1, j2], [i1, i2], 'bo-')  # 'b' = azul
     plt.gca().set_aspect('equal')
     plt.gca().invert_yaxis()  # Para que (0,0) esté arriba a la izquierda
@@ -195,15 +198,15 @@ resultado = blacken_background(resultado)
 resultado = fill_image_gaps(resultado,5)
 '''
 
-images = ["resources/pixel_sword_2.png"]
+images = ["resources/pixel_sword_3.png"]
 images_borders = []
 for image in images:
     images_borders.append(border_list(image))
 
 shape_analyzer_service = ShapeAnalyzerService(images_borders,20)
-print(shape_analyzer_service.shape_segment_list[0])
-print("Cantidad de segmentos: ",len(shape_analyzer_service.shape_segment_list[0]))
-graficar_segmentos(shape_analyzer_service.shape_segment_list[0])
+print(shape_analyzer_service.shapes_segment_list[0])
+print("Cantidad de segmentos: ",len(shape_analyzer_service.shapes_segment_list[0]))
+graficar_segmentos(shape_analyzer_service.shapes_segment_list[0])
 
 
 

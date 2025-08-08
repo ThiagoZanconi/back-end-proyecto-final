@@ -1,21 +1,26 @@
+from dataclasses import dataclass
 import heapq
 import math
-from typing import Dict, List, Tuple
+from typing import List, Tuple
+
+@dataclass
+class Segment:
+    points: List[Tuple[int,int]]
+    first: Tuple[int,int]
+    last: Tuple[int,int]
 
 class ShapeAnalyzerService:
-    shape_list: List[List[Tuple[int,int]]]
-    shape_segment_list: List[List[Tuple[Tuple[int,int],Tuple[int,int]]]]
-    segment_point_map_list: List[ Dict[Tuple[int,int], List[Tuple[int,int]]] ]
+    shapes_list: List[List[Tuple[int,int]]]
+    shapes_segment_list: List[List[Segment]]
 
     def __init__(self, shapes: List[List[Tuple[int,int]]], n = 20):
-        self.shape_list = shapes
-        self.shape_segment_list = []
-        self.segment_point_map_list = []
+        self.shapes_list = shapes
+        self.shapes_segment_list = []
         self.__descomponer_rectas(n)
         #self.__analyze()
 
     def __analyze(self):
-        for shape in self.shape_list:
+        for shape in self.shapes_list:
             directions = []
             chain_code = []
             for (x1, y1), (x2, y2) in zip(shape, shape[1:] + [shape[0]]):  # circular
@@ -32,10 +37,9 @@ class ShapeAnalyzerService:
                 elif (dx, dy) == (-1, 1): chain_code.append(7)  # arriba, derecha
 
     def  __descomponer_rectas(self, n):
-        for shape in self.shape_list:
-            rectas_pq: List[Tuple[int, Tuple[int, int]]] = []
+        for shape in self.shapes_list:
+            rectas_pq: List[Tuple[int, Segment]] = []
             segmentos_agregados: set[Tuple[int,int]] = set()
-            segment_point_map: Dict[ Tuple[int,int], List[Tuple[int,int]]] = {}
             restantes: List[int] = []
             to_be_connected: List[int] = []
             length = len(shape)
@@ -59,16 +63,17 @@ class ShapeAnalyzerService:
 
                 candidatos.sort(key=lambda x: x[2])
                 i,segment_length,delta = candidatos.pop(0)
-                heapq.heappush(rectas_pq, (i, (shape[i], shape[(i + segment_length) % length])))
+                
                 extremos = ((i, (i + segment_length) % length))
-                segmentos_agregados.add(extremos)
+                segmentos_agregados.add(extremos) 
                 indices = [(i + j + 1) % length for j in range(segment_length-1)]
-                point_list: List[Tuple[int,int]] = [i]
+                point_list: List[Tuple[int,int]] = [shape[i]]
                 for ii in indices:
                     restantes.remove(ii)
                     point_list.append(shape[ii])
                 point_list.append(shape[(i + segment_length) % length])
-                segment_point_map[(i, (i + segment_length) % length)] = point_list
+                segment = Segment(point_list, shape[i], shape[(i + segment_length) % length])
+                heapq.heappush(rectas_pq, (i, segment))
                 for extremo in [i, (i + segment_length) % length]:
                     if extremo in to_be_connected:
                         to_be_connected.remove(extremo)
@@ -76,8 +81,7 @@ class ShapeAnalyzerService:
                     else:
                         to_be_connected.append(extremo)
             rectas = [heapq.heappop(rectas_pq)[1] for _ in range(len(rectas_pq))]
-            self.segment_point_map_list.append(segment_point_map)
-            self.shape_segment_list.append(rectas)
+            self.shapes_segment_list.append(rectas)
             
     def _comparar_angulo_rectas(self, p1:Tuple[int,int], p2: Tuple[int,int], p3:Tuple[int,int]) -> float:
         x1,y1 = p1
