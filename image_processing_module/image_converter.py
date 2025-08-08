@@ -5,6 +5,7 @@ from numpy.typing import NDArray
 from PIL import Image
 import numpy as np
 from color_utils import ColorUtils
+from segment_analyzer_service import SegmentAnalyzerService
 from shape_analyzer_service import Segment, ShapeAnalyzerService
 from matrix_color_service import MatrixColorService
 from shape_finder import ShapeFinder
@@ -171,16 +172,27 @@ def graficar_segmentos(segmentos: List[Segment]):
     plt.legend()
     plt.show()
 
-def graficar_segmentos_polares(segmentos: List[Tuple[float, float]]):
-    x, y = 0, 0
-    for angle, length in segmentos:
-        x2 = x + length * math.cos(angle)
-        y2 = y + length * math.sin(angle)
-        plt.plot([x, x2], [y, y2], 'bo-')
-        x, y = x2, y2  # mover al nuevo punto
+def graficar_segmentos_desde_origen(segmentos: List[Segment]):
+    x_actual, y_actual = 0, 0  # comenzamos en el origen
+
+    for segment in segmentos:
+        (i1, j1) = segment.first
+        (i2, j2) = segment.last
+        dx = j2 - j1
+        dy = i2 - i1
+
+        x_nuevo = x_actual + dx
+        y_nuevo = y_actual + dy
+
+        plt.plot([y_actual, y_nuevo], [x_actual, x_nuevo], 'bo-')  # segmento
+
+        # Actualizar punto actual
+        x_actual, y_actual = x_nuevo, y_nuevo
 
     plt.gca().set_aspect('equal')
+    plt.gca().invert_xaxis()  # Para que (0,0) esté arriba a la izquierda
     plt.grid(True)
+    plt.title("Forma trasladada desde (0, 0)")
     plt.show()
 '''
 # Abrir la imagen
@@ -198,15 +210,14 @@ resultado = blacken_background(resultado)
 resultado = fill_image_gaps(resultado,5)
 '''
 
-images = ["resources/pixel_sword_3.png"]
+images = ["resources/pixel_sword_2.png", "resources/pixel_sword_3.png","resources/pixel_sword_4.png", "resources/pixel_sword.avif"]
 images_borders = []
 for image in images:
     images_borders.append(border_list(image))
 
-shape_analyzer_service = ShapeAnalyzerService(images_borders,20)
-print(shape_analyzer_service.shapes_segment_list[0])
-print("Cantidad de segmentos: ",len(shape_analyzer_service.shapes_segment_list[0]))
-graficar_segmentos(shape_analyzer_service.shapes_segment_list[0])
+shape_analyzer_service = ShapeAnalyzerService(images_borders,50)
+segment_analyzer = SegmentAnalyzerService(shape_analyzer_service.shapes_segment_list)
+graficar_segmentos_desde_origen(segment_analyzer.new_shape())
 
 
 

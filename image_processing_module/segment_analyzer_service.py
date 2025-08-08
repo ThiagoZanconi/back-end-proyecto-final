@@ -1,9 +1,8 @@
 from math import sqrt
-import math
 import random
 from typing import List, Tuple
 
-from image_processing_module.shape_analyzer_service import Segment
+from shape_analyzer_service import Segment
 
 class SegmentAnalyzerService:
     #Primera lista (shapes). Segunda lista (segmentos)
@@ -11,7 +10,7 @@ class SegmentAnalyzerService:
     #Primera lista (shapes). Segunda lista (n grupos por distancia). Tercera lista (segmentos)
     grouped_shapes_segments: List[List[List[Segment]]] = []
     #Primer lista de n grupos. Segunda lista de grupos de segmentos que tienen extremos parecidos (en terminos relativos). Tercera lista (segmentos).
-    similar_segments:list[list[List[Tuple[int,int]]]] = []
+    similar_segments:list[list[List[Segment]]] = []
     n:int
 
     def __init__(self, shape_segment_list: List[List[Segment]], n: int = 15):
@@ -19,6 +18,16 @@ class SegmentAnalyzerService:
         self.n = n
         self.__group_segments_by_length()
         self.__compare_segmet_groups_extremes_relative_distance()
+
+    def new_shape(self) -> List[Segment]:
+        new_shape: List[Segment] = []
+        for i in range(self.n):
+            print(self.similar_segments[i])
+            #random_segment_group = random.choice(self.similar_segments[i])
+            random_segment_group = self.similar_segments[i][0]
+            new_shape.extend(random_segment_group)
+            print("-----")
+        return new_shape
 
     def __group_segments_by_length(self):
         for segment_list in self.shape_segment_list:
@@ -30,7 +39,7 @@ class SegmentAnalyzerService:
             acum = 0.0
 
             for seg in segment_list:
-                l = self.__segment_length(seg)
+                l = self.__segment_length(seg.first, seg.last)
                 if acum + l > target and len(grupos) < self.n - 1:
                     grupos.append(grupo_actual)
                     grupo_actual = []
@@ -49,6 +58,7 @@ class SegmentAnalyzerService:
                 p1 = current_segment_group[0].first
                 p2 = current_segment_group[-1].last
                 inserted = False
+                random.shuffle(segment_groups_i)
                 for segment_group in segment_groups_i:
                     r = random.choice(segment_group)
                     p3 = r[0].first
@@ -81,7 +91,7 @@ class SegmentAnalyzerService:
         x4,y4 = p4
         dx1, dy1 = x2 - x1, y2 - y1
         dx2, dy2 = x4 - x3, y4 - y3
-        tolerancia = 0.10  # 10%
+        tolerancia = 0.20  # 10%
 
         if (self.__diferencia_relativa(dx1, dx2) <= tolerancia and self.__diferencia_relativa(dy1, dy2) <= tolerancia):
             return True
@@ -91,33 +101,5 @@ class SegmentAnalyzerService:
     def __diferencia_relativa(self, a, b):
         if a == 0:
             return abs(b) < 1e-9  # o considerar esto como 100% si a es cero
-        return abs(a - b) / abs(a)
-
-    #Tuple[angle,length]
-    #Retorna true si son similares los segmentos
-    def __similar_segments_v2(self, s1: Tuple[float,float], s2: Tuple[float,float]):
-        a1, l1 = s1
-        a2, l2 = s2
-        base = max(l1, l2, 1e-6)  # Evita división por cero
-        return self.__comparar_angulos(a1,a2) < self.DELTA_THRESHOLD and abs(l1 - l2) / base < 0.1
-
-    def _comparar_angulo_rectas(self, p1:Tuple[int,int], p2: Tuple[int,int], p3:Tuple[int,int]) -> float:
-        x1,y1 = p1
-        x2,y2 = p2
-        x3,y3 = p3
-        a12 = math.atan2(y2-y1, x2-x1) 
-        a13 = math.atan2(y3-y1, x3-x1)
-        return self.__comparar_angulos(a12,a13)
-
-    #Delta entre [0, π/2]
-    def __comparar_angulos(self, angle1, angle2) -> float:
-        delta = abs(angle1 - angle2)
-        delta = min(delta, 2*math.pi - delta)
-
-        # Si querés ignorar el sentido
-        if delta > math.pi:
-            delta = 2*math.pi - delta
-        return delta
-                
-                     
+        return abs(a - b) / abs(a)            
                  
