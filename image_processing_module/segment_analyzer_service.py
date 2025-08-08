@@ -13,7 +13,7 @@ class SegmentAnalyzerService:
     similar_segments:list[list[List[Segment]]] = []
     n:int
 
-    def __init__(self, shape_segment_list: List[List[Segment]], n: int = 15):
+    def __init__(self, shape_segment_list: List[List[Segment]], n: int = 10):
         self.shape_segment_list = shape_segment_list
         self.n = n
         self.__group_segments_by_length()
@@ -91,7 +91,7 @@ class SegmentAnalyzerService:
         x4,y4 = p4
         dx1, dy1 = x2 - x1, y2 - y1
         dx2, dy2 = x4 - x3, y4 - y3
-        tolerancia = 0.20  # 10%
+        tolerancia = 0.10  # 10%
 
         if (self.__diferencia_relativa(dx1, dx2) <= tolerancia and self.__diferencia_relativa(dy1, dy2) <= tolerancia):
             return True

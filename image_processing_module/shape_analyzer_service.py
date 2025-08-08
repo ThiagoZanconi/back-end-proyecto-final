@@ -63,7 +63,6 @@ class ShapeAnalyzerService:
 
                 candidatos.sort(key=lambda x: x[2])
                 i,segment_length,delta = candidatos.pop(0)
-                
                 extremos = ((i, (i + segment_length) % length))
                 segmentos_agregados.add(extremos) 
                 indices = [(i + j + 1) % length for j in range(segment_length-1)]

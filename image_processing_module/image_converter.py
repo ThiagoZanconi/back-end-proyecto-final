@@ -1,5 +1,5 @@
 import math
-from typing import Any, Counter, List, Tuple
+from typing import Any, Counter, List, Set, Tuple
 from matplotlib import pyplot as plt
 from numpy.typing import NDArray
 from PIL import Image
@@ -194,6 +194,46 @@ def graficar_segmentos_desde_origen(segmentos: List[Segment]):
     plt.grid(True)
     plt.title("Forma trasladada desde (0, 0)")
     plt.show()
+
+def graficar_segmentos_simetricos(segmentos: List[Segment]):
+    # Posición inicial de ambas ramas
+    x1, y1 = 0, 0
+    x2, y2 = 0, 0
+
+    # Registro de posiciones visitadas
+    visitados1: Set[Tuple[int, int]] = {(x1, y1)}
+    visitados2: Set[Tuple[int, int]] = {(x2, y2)}
+
+    for segment in segmentos:
+        (i1, j1) = segment.first
+        (i2, j2) = segment.last
+        dx = j2 - j1
+        dy = i2 - i1
+
+        # Rama 1 (normal)
+        nx1, ny1 = x1 + dx, y1 + dy
+        # Rama 2 (simétrica)
+        nx2, ny2 = x2 + dx, y2 - dy
+
+        # Graficar segmentos
+        plt.plot([y1, ny1], [x1, nx1], 'bo-')
+        plt.plot([y2, ny2], [x2, nx2], 'ro-')
+
+        # Chequear si se cruzan
+        if (nx1, ny1) in visitados2 or (nx2, ny2) in visitados1 or (nx1, ny1) == (nx2, ny2):
+            print("Cruce detectado en:", (nx1, ny1))
+            break
+
+        # Actualizar posiciones y sets
+        x1, y1 = nx1, ny1
+        x2, y2 = nx2, ny2
+        visitados1.add((x1, y1))
+        visitados2.add((x2, y2))
+
+    plt.axis('equal')
+    plt.grid(True)
+    plt.title("Segmentos simétricos con corte al cruce")
+    plt.show()
 '''
 # Abrir la imagen
 sword_image = Image.open("resources/pixel_sword_1024x1024.png").convert("RGB")  # Asegura que sea RGB
@@ -210,14 +250,14 @@ resultado = blacken_background(resultado)
 resultado = fill_image_gaps(resultado,5)
 '''
 
-images = ["resources/pixel_sword_2.png", "resources/pixel_sword_3.png","resources/pixel_sword_4.png", "resources/pixel_sword.avif"]
+images = ["resources/swords/pixel_sword_2.png", "resources/swords/pixel_sword_3.png","resources/swords/pixel_sword_4.png"]
 images_borders = []
 for image in images:
     images_borders.append(border_list(image))
 
 shape_analyzer_service = ShapeAnalyzerService(images_borders,50)
-segment_analyzer = SegmentAnalyzerService(shape_analyzer_service.shapes_segment_list)
-graficar_segmentos_desde_origen(segment_analyzer.new_shape())
+segment_analyzer = SegmentAnalyzerService(shape_analyzer_service.shapes_segment_list,4)
+graficar_segmentos(segment_analyzer.new_shape())
 
 
 
