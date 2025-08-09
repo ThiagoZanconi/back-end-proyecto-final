@@ -172,28 +172,28 @@ def graficar_segmentos(segmentos: List[Segment]):
     plt.legend()
     plt.show()
 
-def graficar_segmentos_desde_origen(segmentos: List[Segment]):
-    x_actual, y_actual = 0, 0  # comenzamos en el origen
+def graficar_formas_por_separado(lista_de_formas: List[List[Segment]]):
+    for idx, segmentos in enumerate(lista_de_formas):
+        plt.figure()
+        x_actual, y_actual = 0, 0
 
-    for segment in segmentos:
-        (i1, j1) = segment.first
-        (i2, j2) = segment.last
-        dx = j2 - j1
-        dy = i2 - i1
+        for segment in segmentos:
+            (i1, j1) = segment.first
+            (i2, j2) = segment.last
+            dx = j2 - j1
+            dy = i2 - i1
 
-        x_nuevo = x_actual + dx
-        y_nuevo = y_actual + dy
+            x_nuevo = x_actual + dx
+            y_nuevo = y_actual + dy
 
-        plt.plot([y_actual, y_nuevo], [x_actual, x_nuevo], 'bo-')  # segmento
+            plt.plot([y_actual, y_nuevo], [x_actual, x_nuevo], 'bo-')
+            x_actual, y_actual = x_nuevo, y_nuevo
 
-        # Actualizar punto actual
-        x_actual, y_actual = x_nuevo, y_nuevo
-
-    plt.gca().set_aspect('equal')
-    plt.gca().invert_xaxis()  # Para que (0,0) esté arriba a la izquierda
-    plt.grid(True)
-    plt.title("Forma trasladada desde (0, 0)")
-    plt.show()
+        plt.gca().set_aspect('equal')
+        plt.gca().invert_xaxis()
+        plt.grid(True)
+        plt.title(f"Forma {idx+1} trasladada desde (0, 0)")
+        plt.show()
 
 def graficar_segmentos_simetricos(segmentos: List[Segment]):
     # Posición inicial de ambas ramas
@@ -234,6 +234,38 @@ def graficar_segmentos_simetricos(segmentos: List[Segment]):
     plt.grid(True)
     plt.title("Segmentos simétricos con corte al cruce")
     plt.show()
+
+def graficar_dos_listas_segmentos(
+    data: List[Tuple[List['Segment'], List['Segment']]]
+):
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+
+    # Graficar primeros elementos
+    for idx, (primeros, _) in enumerate(data):
+        for s_i, segment in enumerate(primeros):
+            (i1, j1) = segment.first
+            (i2, j2) = segment.last
+            color = 'r' if s_i == 0 else 'b'
+            axes[0].plot([j1, j2], [i1, i2], color + 'o-')
+    axes[0].set_aspect('equal')
+    axes[0].invert_yaxis()
+    axes[0].set_title("Primeros elementos")
+    axes[0].grid(True)
+
+    # Graficar segundos elementos
+    for idx, (_, segundos) in enumerate(data):
+        for s_i, segment in enumerate(segundos):
+            (i1, j1) = segment.first
+            (i2, j2) = segment.last
+            color = 'r' if s_i == 0 else 'b'
+            axes[1].plot([j1, j2], [i1, i2], color + 'o-')
+    axes[1].set_aspect('equal')
+    axes[1].invert_yaxis()
+    axes[1].set_title("Segundos elementos")
+    axes[1].grid(True)
+
+    plt.tight_layout()
+    plt.show()
 '''
 # Abrir la imagen
 sword_image = Image.open("resources/pixel_sword_1024x1024.png").convert("RGB")  # Asegura que sea RGB
@@ -250,14 +282,16 @@ resultado = blacken_background(resultado)
 resultado = fill_image_gaps(resultado,5)
 '''
 
-images = ["resources/swords/pixel_sword_2.png", "resources/swords/pixel_sword_3.png","resources/swords/pixel_sword_4.png"]
+images = ["resources/swords/pixel_sword_3.png","resources/swords/pixel_sword_4.png"]
 images_borders = []
 for image in images:
     images_borders.append(border_list(image))
 
-shape_analyzer_service = ShapeAnalyzerService(images_borders,50)
-segment_analyzer = SegmentAnalyzerService(shape_analyzer_service.shapes_segment_list,4)
-graficar_segmentos(segment_analyzer.new_shape())
+shape_analyzer_service = ShapeAnalyzerService(images_borders,20)
+segment_analyzer = SegmentAnalyzerService(shape_analyzer_service.shapes_segment_list,15)
+
+#graficar_formas_por_separado(new_shapes)
+graficar_dos_listas_segmentos(segment_analyzer.similar_shape_groups(7000))
 
 
 
