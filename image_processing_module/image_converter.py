@@ -216,37 +216,6 @@ def graficar_segmentos_origen(segmentos: List[Segment]):
     plt.title(f"Segmentos de (0,0)")
     plt.show()
 
-def graficar_dos_listas_segmentos(
-    data: List[Tuple[List['Segment'], List['Segment']]]
-):
-    fig, axes = plt.subplots(1, 2, figsize=(10, 5))
-
-    # Graficar primeros elementos
-    for idx, (primeros, _) in enumerate(data):
-        for s_i, segment in enumerate(primeros):
-            (i1, j1) = segment.first
-            (i2, j2) = segment.last
-            color = 'r' if s_i == 0 else 'b'
-            axes[0].plot([j1, j2], [i1, i2], color + 'o-')
-    axes[0].set_aspect('equal')
-    axes[0].invert_yaxis()
-    axes[0].set_title("Primeros elementos")
-    axes[0].grid(True)
-
-    # Graficar segundos elementos
-    for idx, (_, segundos) in enumerate(data):
-        for s_i, segment in enumerate(segundos):
-            (i1, j1) = segment.first
-            (i2, j2) = segment.last
-            color = 'r' if s_i == 0 else 'b'
-            axes[1].plot([j1, j2], [i1, i2], color + 'o-')
-    axes[1].set_aspect('equal')
-    axes[1].invert_yaxis()
-    axes[1].set_title("Segundos elementos")
-    axes[1].grid(True)
-
-    plt.tight_layout()
-    plt.show()
 '''
 # Abrir la imagen
 sword_image = Image.open("resources/pixel_sword_1024x1024.png").convert("RGB")  # Asegura que sea RGB
@@ -271,10 +240,11 @@ for image in images:
 shape_analyzer_service = ShapeAnalyzerService(images_borders,15)
 segment_analyzer = SegmentAnalyzerService(shape_analyzer_service.shapes_segment_list)
 
-graficar_segmentos_origen(segment_analyzer.new_shape())
-#graficar_dos_listas_segmentos(segment_analyzer.similar_shape_groups(7000))
+shapes = []
+for i in range(8):
+    shapes.append(segment_analyzer.new_shape())
 
-
+graficar_formas_por_separado(shapes)
 
 #rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(resultado)
 #Image.fromarray(rgb_matrix).show()
