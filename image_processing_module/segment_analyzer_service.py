@@ -30,24 +30,17 @@ class SegmentAnalyzerService:
         new_segment_list: List[Segment] = []
         shapes_size = len(self.shape_segment_list)
         index = random.randint(0, shapes_size - 1)
-        #Starting from random shape
         current_shape = self.shape_segment_list[index]
         idx = 0
         while(idx<self.shape_size):
             current_segment = current_shape[idx]
             found = False
-            for n in range(shapes_size):
-                new_shape = self.shape_segment_list[n]
-                if(new_shape != current_shape):
-                    p1 = current_segment.first
-                    p2 = current_segment.last
-                    p3 = new_shape[idx].first
-                    p4 = new_shape[idx].last
-                    if(self.__similar_segments(p1, p2, p3, p4)):
-                        found = True
-                        new_segment_list.append(new_shape[idx])
-                        current_shape = new_shape
-                        break
+            for new_shape in random.sample(self.shape_segment_list, shapes_size):
+                if(new_shape != current_shape and self.__similar_segments(current_segment, new_shape[idx])):
+                    found = True
+                    new_segment_list.append(new_shape[idx])
+                    current_shape = new_shape
+                    break
             if(not found):
                 new_segment_list.append(current_segment)
             idx+=1
@@ -81,11 +74,11 @@ class SegmentAnalyzerService:
         shape.pop(i)
         shape.insert(i,new_segment)
     
-    def __similar_segments(self, p1:Tuple[int,int], p2:Tuple[int,int] ,p3:Tuple[int,int] ,p4:Tuple[int,int] ) -> bool:
-        x1,y1 = p1
-        x2,y2 = p2
-        x3,y3 = p3
-        x4,y4 = p4
+    def __similar_segments(self, s1:Segment, s2: Segment) -> bool:
+        x1, y1 = s1.first
+        x2, y2 = s1.last
+        x3, y3 = s2.first
+        x4, y4 = s2.last
         dx1, dy1 = x2 - x1, y2 - y1
         dx2, dy2 = x4 - x3, y4 - y3
 
