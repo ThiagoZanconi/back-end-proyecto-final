@@ -24,8 +24,8 @@ class SegmentAnalyzerService:
         self.shape_segment_list = shape_segment_list
         self.n = n
         self.__group_segments_by_length()
-        self.__compare_segmet_groups_extremes_relative_distance()
-        self.__fill_delta_matrix()
+        #self.__compare_segmet_groups_extremes_relative_distance()
+        #self.__fill_delta_matrix()
 
     def new_shape(self) -> List[Segment]:
         new_shape: List[Segment] = []
@@ -37,13 +37,17 @@ class SegmentAnalyzerService:
             print("-----")
         return new_shape
     
-    def new_shape_v2(self) -> List[List[Segment]]:
+    def new_shape_v2(self) -> List[Segment]:
+        print("Shape Number: ", len(self.grouped_shapes_segments))
+        for shape_groups in self.grouped_shapes_segments:
+            print("Group Number: ",len(shape_groups))
         new_shape: List[List[Segment]] = []
         shapes_size = len(self.grouped_shapes_segments)
-        index = random.randint(0, shapes_size)
+        index = random.randint(0, shapes_size - 1)
         #Starting from random shape
         current_shape_groups = self.grouped_shapes_segments[index]
         shape_groups_size = len(current_shape_groups)
+        idx = 0
         while(idx<shape_groups_size):
             shape_group = current_shape_groups[idx]
             found = False
@@ -56,13 +60,20 @@ class SegmentAnalyzerService:
                     p4 = new_shape_groups[idx][-1].last
                     if(self.__similar_segments(p1, p2, p3, p4)):
                         found = True
+                        new_shape.append(new_shape_groups[idx])
                         current_shape_groups = new_shape_groups
                         break
             if(not found):
                 new_shape.append(shape_group)
             idx+=1
-
-        return new_shape
+        return self.__segments_from_segment_groups(new_shape)
+    
+    def __segments_from_segment_groups(self, segment_groups: List[List[Segment]]) -> List[Segment]:
+        segments = []
+        for segment_group in segment_groups:
+            for segment in segment_group:
+                segments.append(segment)
+        return segments
     
     def similar_shape_groups(self, treshold = 50) -> List[Tuple[List[Segment], List[Segment]]]:
         height, width = self.shapes_grouped_segments_delta_matrix[0].shape[:2]
@@ -152,7 +163,7 @@ class SegmentAnalyzerService:
         x4,y4 = p4
         dx1, dy1 = x2 - x1, y2 - y1
         dx2, dy2 = x4 - x3, y4 - y3
-        tolerancia = 0.10  # 10%
+        tolerancia = 0.05  # 5%
 
         if (self.__diferencia_relativa(dx1, dx2) <= tolerancia and self.__diferencia_relativa(dy1, dy2) <= tolerancia):
             return True

@@ -287,11 +287,11 @@ images_borders = []
 for image in images:
     images_borders.append(border_list(image))
 
-shape_analyzer_service = ShapeAnalyzerService(images_borders,20)
-segment_analyzer = SegmentAnalyzerService(shape_analyzer_service.shapes_segment_list,15)
+shape_analyzer_service = ShapeAnalyzerService(images_borders,50)
+segment_analyzer = SegmentAnalyzerService(shape_analyzer_service.shapes_segment_list,40)
 
-#graficar_formas_por_separado(new_shapes)
-graficar_dos_listas_segmentos(segment_analyzer.similar_shape_groups(7000))
+graficar_segmentos(segment_analyzer.new_shape_v2())
+#graficar_dos_listas_segmentos(segment_analyzer.similar_shape_groups(7000))
 
 
 
