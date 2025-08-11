@@ -195,44 +195,25 @@ def graficar_formas_por_separado(lista_de_formas: List[List[Segment]]):
         plt.title(f"Forma {idx+1} trasladada desde (0, 0)")
         plt.show()
 
-def graficar_segmentos_simetricos(segmentos: List[Segment]):
-    # Posición inicial de ambas ramas
+def graficar_segmentos_origen(segmentos: List[Segment]):
+    plt.figure()
     x1, y1 = 0, 0
-    x2, y2 = 0, 0
-
-    # Registro de posiciones visitadas
-    visitados1: Set[Tuple[int, int]] = {(x1, y1)}
-    visitados2: Set[Tuple[int, int]] = {(x2, y2)}
 
     for segment in segmentos:
         (i1, j1) = segment.first
         (i2, j2) = segment.last
         dx = j2 - j1
         dy = i2 - i1
-
-        # Rama 1 (normal)
         nx1, ny1 = x1 + dx, y1 + dy
-        # Rama 2 (simétrica)
-        nx2, ny2 = x2 + dx, y2 - dy
 
-        # Graficar segmentos
         plt.plot([y1, ny1], [x1, nx1], 'bo-')
-        plt.plot([y2, ny2], [x2, nx2], 'ro-')
 
-        # Chequear si se cruzan
-        if (nx1, ny1) in visitados2 or (nx2, ny2) in visitados1 or (nx1, ny1) == (nx2, ny2):
-            print("Cruce detectado en:", (nx1, ny1))
-            break
-
-        # Actualizar posiciones y sets
         x1, y1 = nx1, ny1
-        x2, y2 = nx2, ny2
-        visitados1.add((x1, y1))
-        visitados2.add((x2, y2))
 
-    plt.axis('equal')
+    plt.gca().set_aspect('equal')
+    plt.gca().invert_xaxis()
     plt.grid(True)
-    plt.title("Segmentos simétricos con corte al cruce")
+    plt.title(f"Segmentos de (0,0)")
     plt.show()
 
 def graficar_dos_listas_segmentos(
@@ -282,15 +263,15 @@ resultado = blacken_background(resultado)
 resultado = fill_image_gaps(resultado,5)
 '''
 
-images = ["resources/swords/pixel_sword_3.png","resources/swords/pixel_sword_4.png"]
+images = ["resources/swords/pixel_sword_3.png","resources/swords/pixel_sword_4.png", "resources/swords/pixel_sword_2.png"]
 images_borders = []
 for image in images:
     images_borders.append(border_list(image))
 
-shape_analyzer_service = ShapeAnalyzerService(images_borders,50)
-segment_analyzer = SegmentAnalyzerService(shape_analyzer_service.shapes_segment_list,40)
+shape_analyzer_service = ShapeAnalyzerService(images_borders,15)
+segment_analyzer = SegmentAnalyzerService(shape_analyzer_service.shapes_segment_list)
 
-graficar_segmentos(segment_analyzer.new_shape_v2())
+graficar_segmentos_origen(segment_analyzer.new_shape())
 #graficar_dos_listas_segmentos(segment_analyzer.similar_shape_groups(7000))
 
 
