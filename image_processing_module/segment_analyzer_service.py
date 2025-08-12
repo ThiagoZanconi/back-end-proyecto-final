@@ -2,6 +2,9 @@ from dataclasses import dataclass
 from math import sqrt
 import random
 from typing import List, Tuple
+from numpy.typing import NDArray
+
+import numpy as np
 from shape_analyzer_service import Segment
 
 @dataclass
@@ -45,6 +48,48 @@ class SegmentAnalyzerService:
                 new_segment_list.append(current_segment)
             idx+=1
         return new_segment_list
+    
+    def new_matrix_shape(self, size = 256) -> NDArray[np.float64]:
+        new_shape_segments = self.new_shape()
+        matrix = np.zeros((size, size, 3), dtype=np.float64)
+        origen = (20,210)
+        top = bottom = origen[0]
+        left = right = origen[1]
+        point_list: List[Tuple[int,int]] = [origen]
+        for segment in new_shape_segments:
+            origen = point_list[-1]
+            delta = tuple(a - b for a, b in zip(origen, segment.first))
+            for i in range(1, len(segment.points)):
+                moved_point = tuple(a + b for a, b in zip(segment.points[i], delta))
+                point_list.append(moved_point)
+                if(moved_point[0]<top):
+                    top = moved_point[0]
+                elif(moved_point[0]>bottom):
+                    bottom = moved_point[0]
+                if(moved_point[1]<left):
+                    left = moved_point[1]
+                elif(moved_point[1]>right):
+                    right = moved_point[1]
+
+        # Centro de la forma
+        cx = (left + right) // 2
+        cy = (top + bottom) // 2
+
+        # Centro del lienzo
+        center_x = (size-1) // 2
+        center_y = (size-1) // 2
+
+        # Corrimiento necesario
+        dx = center_x - cx
+        dy = center_y - cy
+
+        for i in range(len(point_list)):
+            point_list[i] = (point_list[i][0] + dy, point_list[i][1] + dx)
+        
+        for i,j in point_list:
+            matrix[i,j] = [100, 0, 0]
+
+        return matrix
     
     def __join_smallest_segments(self, shape: List[Segment], n:int):
         while(n):

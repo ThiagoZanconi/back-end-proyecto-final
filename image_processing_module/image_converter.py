@@ -8,7 +8,6 @@ from color_utils import ColorUtils
 from segment_analyzer_service import SegmentAnalyzerService
 from shape_analyzer_service import Segment, ShapeAnalyzerService
 from matrix_color_service import MatrixColorService
-from shape_finder import ShapeFinder
 
 def reducir_imagen(original_matrix: NDArray[np.uint8], nuevo_tamaño: Tuple[int, int]) -> NDArray[np.uint8]:
     height, width, rgb = original_matrix.shape
@@ -232,19 +231,19 @@ resultado = blacken_background(resultado)
 resultado = fill_image_gaps(resultado,5)
 '''
 
-images = ["resources/swords/pixel_sword_3.png","resources/swords/pixel_sword_4.png", "resources/swords/pixel_sword_2.png"]
+images = ["resources/swords/pixel_sword_3.png","resources/swords/pixel_sword_4.png", "resources/swords/pixel_sword_2.png", "resources/swords/pixel_sword.avif"]
 images_borders = []
 for image in images:
     images_borders.append(border_list(image))
 
-shape_analyzer_service = ShapeAnalyzerService(images_borders,15)
+shape_analyzer_service = ShapeAnalyzerService(images_borders,20)
 segment_analyzer = SegmentAnalyzerService(shape_analyzer_service.shapes_segment_list)
 
-shapes = []
 for i in range(8):
-    shapes.append(segment_analyzer.new_shape())
-
-graficar_formas_por_separado(shapes)
+    lab_matrix = segment_analyzer.new_matrix_shape(300)
+    rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(lab_matrix)
+    Image.fromarray(rgb_matrix).show()
+    input("Presiona Enter para mostrar la siguiente imagen...")
 
 #rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(resultado)
 #Image.fromarray(rgb_matrix).show()

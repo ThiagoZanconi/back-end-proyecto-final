@@ -1,5 +1,6 @@
 from collections import Counter, deque
 from dataclasses import dataclass
+import heapq
 import time
 from typing import List, Tuple
 from numpy.typing import NDArray
@@ -109,7 +110,55 @@ class MatrixColorService:
         for i,j in list:
             matriz[i,j] = [100,0,0]
         return matriz
+    
+    def find_sub_shape(self, n=1):
+        matrix = self.matrix.copy()
+        border_set = self.__get_border()
+        delta_pq: List[Tuple[float, Tuple[int,int]]] = []
+        for i, j in border_set:
+            delta_acum = self.__delta_acum((i,j))
+            matrix[i,j] = [100,0,0]
+            heapq.heappush(delta_pq, (-delta_acum, (i,j)))
+        for i in range(n):
+            delta, p = heapq.heappop(delta_pq)
+            i, j = p
+            first_adyacentes = [(i, j + 1), (i + 1, j), (i, j - 1), (i - 1, j)]
+            while((i,j) in border_set or (i,j) in self.background_set):
+                i, j = first_adyacentes.pop()
             
+            camino = [(i,j)]
+            while((i,j) not in border_set):
+                adyacentes = [(i, j + 1), (i + 1, j), (i, j - 1), (i - 1, j)]
+                new_delta_pq = self.__delta_pq([(ii,jj) for (ii,jj) in adyacentes if (ii,jj) not in camino and (ii,jj) not in first_adyacentes])
+                new_delta,p = heapq.heappop(new_delta_pq)
+                i, j = p
+                camino.append(p)
+
+
+    
+    def __get_border(self) -> set[Tuple[int,int]]:
+        border_set = set()
+        for i in range(self.height):
+            for j in range(self.width):
+                if(self.boolean_matrix_border[i][j]):
+                    border_set.add((i,j))
+        return border_set
+    
+    def __delta_acum(self, p:Tuple[int,int]) -> float:
+        i, j = p
+        adyacentes = [(i, j + 1), (i + 1, j + 1), (i + 1, j), (i + 1, j - 1), (i, j - 1), (i - 1, j - 1), (i - 1, j), (i - 1, j + 1)]
+        delta_acum = 0.0
+        for ii, jj in adyacentes:
+            delta_acum += ColorUtils.delta_ciede2000(self.matrix[i,j], self.matrix[ii,jj])
+        return delta_acum
+    
+    def __delta_pq(self, points: List[Tuple[int,int]]) -> List[Tuple[float, Tuple[int,int]]]:
+        delta_pq: List[Tuple[float, Tuple[int,int]]] = []
+        for i, j in points:
+            delta_acum = self.__delta_acum((i,j))
+            heapq.heappush(delta_pq, (-delta_acum, (i,j)))
+        return delta_pq
+
     def __get_next(self, p, boolean_matrix) -> Tuple[int, int] | None:
         i, j = p
         adyacentes = [(i, j + 1), (i + 1, j + 1), (i + 1, j), (i + 1, j - 1), (i, j - 1), (i - 1, j - 1), (i - 1, j), (i - 1, j + 1)]
