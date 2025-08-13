@@ -231,19 +231,23 @@ resultado = blacken_background(resultado)
 resultado = fill_image_gaps(resultado,5)
 '''
 
+'''
 images = ["resources/swords/pixel_sword_3.png","resources/swords/pixel_sword_4.png", "resources/swords/pixel_sword_2.png", "resources/swords/pixel_sword.avif"]
 images_borders = []
 for image in images:
     images_borders.append(border_list(image))
-
 shape_analyzer_service = ShapeAnalyzerService(images_borders,20)
 segment_analyzer = SegmentAnalyzerService(shape_analyzer_service.shapes_segment_list)
+'''
 
-for i in range(8):
-    lab_matrix = segment_analyzer.new_matrix_shape(300)
-    rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(lab_matrix)
-    Image.fromarray(rgb_matrix).show()
-    input("Presiona Enter para mostrar la siguiente imagen...")
+sword_image = Image.open("resources/swords/pixel_sword_3.png").convert("RGB")  # Asegura que sea RGB
+# Convertir a matriz NumPy
+matriz_1024x1024: NDArray[np.uint8] = np.array(sword_image)
+matriz_128 = reducir_imagen(matriz_1024x1024, (256, 256))
+lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(matriz_128)
+matrix_color_service = MatrixColorService(lab_matrix, delta_threshold = 10)
+resultado = matrix_color_service.find_sub_shape(1)
 
-#rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(resultado)
-#Image.fromarray(rgb_matrix).show()
+
+rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(resultado)
+Image.fromarray(rgb_matrix).show()

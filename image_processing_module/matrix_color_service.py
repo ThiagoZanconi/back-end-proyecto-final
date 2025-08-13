@@ -23,8 +23,9 @@ class MatrixColorService:
     matrix: NDArray[np.float64]
     boolean_matrix_shape: NDArray[np.bool_]
     boolean_matrix_border: NDArray[np.bool_]
-    background_set: set[Tuple[int,int]]
-    shape_set: set[Tuple[int,int]]
+    background_set: set[Tuple[int,int]] = set()
+    border_set: set[Tuple[int,int]] = set()
+    shape_set: set[Tuple[int,int]] = set()
     height: int
     width: int
 
@@ -35,8 +36,7 @@ class MatrixColorService:
         self.height, self.width, lab = matrix.shape
         self.matrix = matrix
         self.boolean_matrix_shape = np.zeros((self.height, self.width), dtype=bool)
-        self.background_set = set()
-        self.shape_set = set()
+        self.boolean_matrix_border = np.zeros((self.height, self.width), dtype=bool)
         self.__shape_matrix(delta_threshold)
         for i in range(self.height):
             for j in range(self.width):
@@ -111,48 +111,54 @@ class MatrixColorService:
             matriz[i,j] = [100,0,0]
         return matriz
     
-    def find_sub_shape(self, n=1):
-        matrix = self.matrix.copy()
-        border_set = self.__get_border()
-        delta_pq: List[Tuple[float, Tuple[int,int]]] = []
-        for i, j in border_set:
-            delta_acum = self.__delta_acum((i,j))
-            matrix[i,j] = [100,0,0]
-            heapq.heappush(delta_pq, (-delta_acum, (i,j)))
-        for i in range(n):
+    def find_sub_shape(self, n = 1) -> NDArray[np.float64]:
+        print(self.border_set)
+        delta_pq: List[Tuple[float, Tuple[int,int]]] = self.__delta_pq(self.border_set)
+        caminos = []
+        for _ in range(n):
             delta, p = heapq.heappop(delta_pq)
             i, j = p
             first_adyacentes = [(i, j + 1), (i + 1, j), (i, j - 1), (i - 1, j)]
-            while((i,j) in border_set or (i,j) in self.background_set):
-                i, j = first_adyacentes.pop()
+            while(p in self.border_set or p in self.background_set):
+                p = first_adyacentes.pop()
             
-            camino = [(i,j)]
-            while((i,j) not in border_set):
-                adyacentes = [(i, j + 1), (i + 1, j), (i, j - 1), (i - 1, j)]
+            camino = [p]
+            while(camino[-1] not in self.border_set):
+                i, j = camino[-1]
+                adyacentes = [(i, j + 1), (i + 1, j + 1), (i + 1, j), (i + 1, j - 1), (i, j - 1), (i - 1, j - 1), (i - 1, j), (i - 1, j + 1)]
                 new_delta_pq = self.__delta_pq([(ii,jj) for (ii,jj) in adyacentes if (ii,jj) not in camino and (ii,jj) not in first_adyacentes])
-                new_delta,p = heapq.heappop(new_delta_pq)
-                i, j = p
+                new_delta, p = heapq.heappop(new_delta_pq)
                 camino.append(p)
+            #self.border_set.update(camino)
+            caminos.append(camino)
+        matrix = self.matrix.copy()
+        for i, j in self.border_set:
+            matrix[i,j] = [100,0,0]
+        for camino in caminos:
+            for i,j in camino:
+                matrix[i,j] = [0,128,128]
 
-
+        return matrix
     
-    def __get_border(self) -> set[Tuple[int,int]]:
+    def get_border_set(self) -> set[Tuple[int,int]]:
         border_set = set()
         for i in range(self.height):
             for j in range(self.width):
                 if(self.boolean_matrix_border[i][j]):
                     border_set.add((i,j))
+        self.border_set = border_set
         return border_set
     
     def __delta_acum(self, p:Tuple[int,int]) -> float:
         i, j = p
         adyacentes = [(i, j + 1), (i + 1, j + 1), (i + 1, j), (i + 1, j - 1), (i, j - 1), (i - 1, j - 1), (i - 1, j), (i - 1, j + 1)]
+        adyacentes = [(ii,jj) for (ii,jj) in adyacentes if (ii,jj) not in self.background_set and (ii,jj) not in self.border_set]
         delta_acum = 0.0
         for ii, jj in adyacentes:
             delta_acum += ColorUtils.delta_ciede2000(self.matrix[i,j], self.matrix[ii,jj])
         return delta_acum
     
-    def __delta_pq(self, points: List[Tuple[int,int]]) -> List[Tuple[float, Tuple[int,int]]]:
+    def __delta_pq(self, points: set[Tuple[int,int]]) -> List[Tuple[float, Tuple[int,int]]]:
         delta_pq: List[Tuple[float, Tuple[int,int]]] = []
         for i, j in points:
             delta_acum = self.__delta_acum((i,j))
@@ -295,10 +301,10 @@ class MatrixColorService:
         print(f"Tiempo de ejecución: {end_delta - start:.6f} segundos")
         self.__connect_borders()
         self.__fill_gaps()
-        connected_sets = self.__conjuntos_conectados()
-        self.__keep_bigger_sets(connected_sets)
-        self.__tapar_picos_negros()
-        self.__extraer_borde_numpy()
+        #connected_sets = self.__conjuntos_conectados()
+        #self.__keep_bigger_sets(connected_sets)
+        #self.__tapar_picos_negros()
+        self.__extraer_borde()
         end = time.perf_counter()
         print(f"Tiempo de ejecución: {end - start:.6f} segundos")
     
@@ -365,57 +371,57 @@ class MatrixColorService:
                 bottom_row_length = 1
             elif bottom_row_length!=0:
                 bottom_row_length+=1
-    
+
     def __fill_gaps(self):
-        border_set = self.shape_set.copy()
-        while(border_set):
-            adyacentes_not_in_set: set[Tuple[int,int]] = self.__obtener_adyacentes_not_in_set(border_set)
-            border_set = self.__agregar_cruzados(adyacentes_not_in_set)
-
-    def __obtener_adyacentes_not_in_set(self, border_set: set[Tuple[int,int]]):
-        toReturn: set[Tuple[int,int]] = set()
-        for i,j in iter(border_set):
-            vecinos = [ (i,j-1), (i-1,j), (i+1,j), (i,j+1)]
-            for vi,vj in vecinos:
-                if( 0 <= vi < self.height and 0 <= vj < self.width and not self.boolean_matrix_shape[vi,vj]):
-                    toReturn.add((vi,vj))
-        return toReturn
-    
-    def __agregar_cruzados(self, adyacentes_not_in_set: List[Tuple[int,int]]) -> set[tuple[int, int]]:
-        # Crear estructuras para acceso rápido
-        from collections import defaultdict
-
-        col_map = defaultdict(set)  # j -> set of i
-        row_map = defaultdict(set)  # i -> set of j
-        for i, j in self.shape_set:
-            col_map[j].add(i)
-            row_map[i].add(j)
-
-        added = set()
-        for i, j in adyacentes_not_in_set:
-            arriba = any(ii < i for ii in col_map[j])
-            abajo  = any(ii > i for ii in col_map[j])
-            izq    = any(jj < j for jj in row_map[i])
-            der    = any(jj > j for jj in row_map[i])
-
-            if (arriba and abajo and izq and der):
-                self.boolean_matrix_shape[i,j] = True
-                self.shape_set.add((i,j))
-                added.add((i, j))
-
-        return added
+        p_queue: deque[Tuple[int,int]] = deque()
+        visited_matrix = np.zeros((self.height, self.width), dtype=bool)
+        for i in range(self.height):
+            for j in range(self.width):
+                if(not self.boolean_matrix_shape[i,j]):
+                    p_queue.append((i,j))
+                else:
+                    visited_matrix[i,j] = True
+        
+        background_group = set()
+        shape_group = set()
+        while p_queue:
+            shape = True
+            i, j = p_queue.popleft()
+            group: set[Tuple[int,int]] = set()
+            if(not visited_matrix[i,j]):
+                group.add((i,j))
+                visited_matrix[i,j] = True
+                vecinos = [ (i,j-1), (i-1,j), (i+1,j), (i,j+1)]
+                group_queue: deque[Tuple[int,int]] = deque(vecinos)
+                while(group_queue):
+                    i, j = group_queue.popleft()
+                    if(0 <= i < self.height and 0 <= j < self.width):
+                        if(not visited_matrix[i,j]):
+                            visited_matrix[i,j] = True
+                            group.add((i,j))
+                            vecinos = [ (i,j-1), (i-1,j), (i+1,j), (i,j+1)]
+                            group_queue.extend(vecinos)
+                    else:
+                        shape = False
+            if(shape):
+                shape_group.update(group)
+            else:
+                background_group.update(group)
+        for i,j in shape_group:
+            self.boolean_matrix_shape[i,j] = True
+            self.shape_set.add((i,j))
+        self.background_set.update(background_group)
                     
-    def __extraer_borde_numpy(self):
-        padded = np.pad(self.boolean_matrix_shape, pad_width=1, mode='constant', constant_values=0)
-        centro = self.boolean_matrix_shape
-        arriba = padded[:-2, 1:-1]
-        abajo = padded[2:, 1:-1]
-        izquierda = padded[1:-1, :-2]
-        derecha = padded[1:-1, 2:]
-
-        erosionada = centro & arriba & abajo & izquierda & derecha
-        self.boolean_matrix_border = centro & ~erosionada
-        self.shape_set = self.__sync_matrix_set(self.boolean_matrix_shape)
+    def __extraer_borde(self):
+        for i in range(self.height):
+            for j in range(self.width):
+                adyacentes = [(i, j + 1), (i + 1, j + 1), (i + 1, j), (i + 1, j - 1), (i, j - 1), (i - 1, j - 1), (i - 1, j), (i - 1, j + 1)]
+                if(not self.boolean_matrix_shape[i,j]):
+                    if(self.shape_set.intersection(adyacentes)):
+                        self.border_set.add((i,j))
+                        self.boolean_matrix_border[i,j] = True
+                    else:
+                        self.background_set.add((i,j))
     
     def __conjuntos_conectados(self) -> List[ConjuntoConectado]:
         toReturn: List[ConjuntoConectado] = []
