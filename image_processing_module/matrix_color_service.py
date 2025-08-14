@@ -20,14 +20,15 @@ class ConjuntoConectado:
     b: Tuple[int,int]
 
 class MatrixColorService:
+    height: int
+    width: int
     matrix: NDArray[np.float64]
     boolean_matrix_shape: NDArray[np.bool_]
     boolean_matrix_border: NDArray[np.bool_]
     background_set: set[Tuple[int,int]] = set()
     border_set: set[Tuple[int,int]] = set()
     shape_set: set[Tuple[int,int]] = set()
-    height: int
-    width: int
+    background_colors = set()
 
     # Contador para todos los colores
     __color_counter =  Counter()
@@ -112,7 +113,6 @@ class MatrixColorService:
         return matriz
     
     def find_sub_shape(self, n = 1) -> NDArray[np.float64]:
-        print(self.border_set)
         delta_pq: List[Tuple[float, Tuple[int,int]]] = self.__delta_pq(self.border_set)
         caminos = []
         for _ in range(n):
@@ -132,6 +132,9 @@ class MatrixColorService:
             #self.border_set.update(camino)
             caminos.append(camino)
         matrix = self.matrix.copy()
+        for i, j in self.shape_set:
+            if(tuple(self.matrix[i,j]) == tuple([0,0,0])):
+                print("Hay negro")
         for i, j in self.border_set:
             matrix[i,j] = [100,0,0]
         for camino in caminos:
@@ -149,6 +152,13 @@ class MatrixColorService:
         self.border_set = border_set
         return border_set
     
+    def __delta_pq(self, points: set[Tuple[int,int]]) -> List[Tuple[float, Tuple[int,int]]]:
+        delta_pq: List[Tuple[float, Tuple[int,int]]] = []
+        for i, j in points:
+            delta_acum = self.__delta_vecinos((i,j))
+            heapq.heappush(delta_pq, (-delta_acum, (i,j)))
+        return delta_pq
+    
     def __delta_acum(self, p:Tuple[int,int]) -> float:
         i, j = p
         adyacentes = [(i, j + 1), (i + 1, j + 1), (i + 1, j), (i + 1, j - 1), (i, j - 1), (i - 1, j - 1), (i - 1, j), (i - 1, j + 1)]
@@ -157,13 +167,6 @@ class MatrixColorService:
         for ii, jj in adyacentes:
             delta_acum += ColorUtils.delta_ciede2000(self.matrix[i,j], self.matrix[ii,jj])
         return delta_acum
-    
-    def __delta_pq(self, points: set[Tuple[int,int]]) -> List[Tuple[float, Tuple[int,int]]]:
-        delta_pq: List[Tuple[float, Tuple[int,int]]] = []
-        for i, j in points:
-            delta_acum = self.__delta_acum((i,j))
-            heapq.heappush(delta_pq, (-delta_acum, (i,j)))
-        return delta_pq
 
     def __get_next(self, p, boolean_matrix) -> Tuple[int, int] | None:
         i, j = p
@@ -301,9 +304,10 @@ class MatrixColorService:
         print(f"Tiempo de ejecución: {end_delta - start:.6f} segundos")
         self.__connect_borders()
         self.__fill_gaps()
-        #connected_sets = self.__conjuntos_conectados()
-        #self.__keep_bigger_sets(connected_sets)
-        #self.__tapar_picos_negros()
+        connected_sets = self.__conjuntos_conectados()
+        self.__keep_bigger_sets(connected_sets)
+        self.__tapar_picos_negros()
+        self.__pulir_shape()
         self.__extraer_borde()
         end = time.perf_counter()
         print(f"Tiempo de ejecución: {end - start:.6f} segundos")
@@ -411,7 +415,18 @@ class MatrixColorService:
             self.boolean_matrix_shape[i,j] = True
             self.shape_set.add((i,j))
         self.background_set.update(background_group)
-                    
+    
+    def __pulir_shape(self):
+        for i in range(self.height):
+            for j in range(self.width):
+                if (i,j) not in self.shape_set:
+                    self.background_colors.add(tuple(self.matrix[i,j]))
+        copy = self.shape_set.copy()
+        for i, j in copy:
+            if (tuple(self.matrix[i,j]) in self.background_colors):
+                self.boolean_matrix_shape[i,j] = False
+                self.shape_set.discard((i,j))
+
     def __extraer_borde(self):
         for i in range(self.height):
             for j in range(self.width):

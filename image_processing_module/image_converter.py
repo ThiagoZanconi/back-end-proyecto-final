@@ -246,7 +246,7 @@ matriz_1024x1024: NDArray[np.uint8] = np.array(sword_image)
 matriz_128 = reducir_imagen(matriz_1024x1024, (256, 256))
 lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(matriz_128)
 matrix_color_service = MatrixColorService(lab_matrix, delta_threshold = 10)
-resultado = matrix_color_service.find_sub_shape(1)
+resultado = matrix_color_service.find_sub_shape(25)
 
 
 rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(resultado)
