@@ -12,20 +12,16 @@ from matrix_color_service import MatrixColorService
 def reducir_imagen(original_matrix: NDArray[np.uint8], nuevo_tamaño: Tuple[int, int]) -> NDArray[np.uint8]:
     height, width, rgb = original_matrix.shape
     new_height, new_width = nuevo_tamaño
-
-    # Coordenadas de división de bloques sin pérdida/solape
-    ys = np.linspace(0, height, new_height + 1, dtype=int)
-    xs = np.linspace(0, width, new_width + 1, dtype=int)
-
     reduced = np.zeros((new_height, new_width, rgb), dtype=np.uint8)
+
+    factor_h = height // new_height
+    resto_h = (height % new_height) // 2
+    factor_w = width // new_width
+    resto_w = (width % new_width) // 2
 
     for i in range(new_height):
         for j in range(new_width):
-            y0, y1 = ys[i], ys[i+1]
-            x0, x1 = xs[j], xs[j+1]
-            block = original_matrix[y0:y1, x0:x1]
-            reduced[i, j] = block.mean(axis=(0, 1)).astype(np.uint8)
-
+            reduced[i, j] = original_matrix[i*factor_h + resto_h,j*factor_w + resto_w]
     return reduced
 
 def unify_sub_matrices_color(original_matrix: NDArray[np.float64], div_factor = 32) -> NDArray[np.float64]:
@@ -215,6 +211,53 @@ def graficar_segmentos_origen(segmentos: List[Segment]):
     plt.title(f"Segmentos de (0,0)")
     plt.show()
 
+def mostrar_imagen_interactiva(rgb_matrix):
+    """
+    Muestra una imagen RGB a partir de una matriz NumPy y permite seleccionar píxeles.
+    Al hacer clic en un píxel, se muestra su color (R, G, B) y se marca hasta que se seleccione otro.
+    """
+    fig, ax = plt.subplots()
+    im = ax.imshow(rgb_matrix)
+    ax.set_title("Click en un pixel para ver su color")
+
+    # Variables para guardar el marcador y el texto actual
+    marker = None
+    text_annotation = None
+
+    def onclick(event):
+        nonlocal marker, text_annotation
+
+        if event.inaxes != ax:  # Evitar clics fuera de la imagen
+            return
+
+        # Obtener coordenadas en la matriz
+        j, i = int(event.xdata + 0.5), int(event.ydata + 0.5)  # x=columna, y=fila
+
+        # Validar límites
+        if i < 0 or i >= rgb_matrix.shape[0] or j < 0 or j >= rgb_matrix.shape[1]:
+            return
+
+        # Obtener valor RGB
+        color = tuple(rgb_matrix[i, j])
+
+        # Eliminar marcador y texto anteriores
+        if marker:
+            marker.remove()
+        if text_annotation:
+            text_annotation.remove()
+
+        # Marcar el pixel
+        marker = ax.plot(j, i, marker='o', color='red', markersize=8, markeredgewidth=2)[0]
+        text_annotation = ax.text(j + 5, i, f"{color}", color='white', fontsize=10,
+                                  bbox=dict(facecolor='black', alpha=0.7))
+
+        fig.canvas.draw()
+
+    # Conectar el evento de clic
+    fig.canvas.mpl_connect('button_press_event', onclick)
+
+    plt.show()
+
 '''
 # Abrir la imagen
 sword_image = Image.open("resources/pixel_sword_1024x1024.png").convert("RGB")  # Asegura que sea RGB
@@ -243,11 +286,11 @@ segment_analyzer = SegmentAnalyzerService(shape_analyzer_service.shapes_segment_
 sword_image = Image.open("resources/swords/pixel_sword_3.png").convert("RGB")  # Asegura que sea RGB
 # Convertir a matriz NumPy
 matriz_1024x1024: NDArray[np.uint8] = np.array(sword_image)
-matriz_128 = reducir_imagen(matriz_1024x1024, (256, 256))
+matriz_128 = reducir_imagen(matriz_1024x1024, (128, 128))
 lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(matriz_128)
 matrix_color_service = MatrixColorService(lab_matrix, delta_threshold = 10)
 resultado = matrix_color_service.find_sub_shape(25)
 
 
 rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(resultado)
-Image.fromarray(rgb_matrix).show()
+mostrar_imagen_interactiva(rgb_matrix)

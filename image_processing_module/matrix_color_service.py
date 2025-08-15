@@ -113,10 +113,10 @@ class MatrixColorService:
         return matriz
     
     def find_sub_shape(self, n = 1) -> NDArray[np.float64]:
-        delta_pq: List[Tuple[float, Tuple[int,int]]] = self.__delta_pq(self.border_set)
+        delta_pq: List[Tuple[float, Tuple[Tuple[int,int],Tuple[int,int]]]] = self.__delta_pq(self.border_set)
         caminos = []
         for _ in range(n):
-            delta, p = heapq.heappop(delta_pq)
+            delta, (p,_) = heapq.heappop(delta_pq)
             i, j = p
             first_adyacentes = [(i, j + 1), (i + 1, j), (i, j - 1), (i - 1, j)]
             while(p in self.border_set or p in self.background_set):
@@ -127,7 +127,8 @@ class MatrixColorService:
                 i, j = camino[-1]
                 adyacentes = [(i, j + 1), (i + 1, j + 1), (i + 1, j), (i + 1, j - 1), (i, j - 1), (i - 1, j - 1), (i - 1, j), (i - 1, j + 1)]
                 new_delta_pq = self.__delta_pq([(ii,jj) for (ii,jj) in adyacentes if (ii,jj) not in camino and (ii,jj) not in first_adyacentes])
-                new_delta, p = heapq.heappop(new_delta_pq)
+                new_delta, (p,v) = heapq.heappop(new_delta_pq)
+                camino.append(v)
                 camino.append(p)
             #self.border_set.update(camino)
             caminos.append(camino)
@@ -152,11 +153,11 @@ class MatrixColorService:
         self.border_set = border_set
         return border_set
     
-    def __delta_pq(self, points: set[Tuple[int,int]]) -> List[Tuple[float, Tuple[int,int]]]:
-        delta_pq: List[Tuple[float, Tuple[int,int]]] = []
+    def __delta_pq(self, points: set[Tuple[int,int]]) -> List[Tuple[float, Tuple[Tuple[int,int],Tuple[int,int]]]]:
+        delta_pq: List[Tuple[float, Tuple[Tuple[int,int],Tuple[int,int]]]] = []
         for i, j in points:
-            delta_acum = self.__delta_vecinos((i,j))
-            heapq.heappush(delta_pq, (-delta_acum, (i,j)))
+            delta_acum, max_vecino = self.__delta_vecinos((i,j))
+            heapq.heappush(delta_pq, (-delta_acum, ((i,j),max_vecino)))
         return delta_pq
     
     def __delta_acum(self, p:Tuple[int,int]) -> float:
@@ -315,23 +316,25 @@ class MatrixColorService:
     def __calculate_matrix_delta(self,threshold):
         for i in range(self.height):
             for j in range(self.width):
-                delta = self.__delta_vecinos((i,j))
+                delta, _ = self.__delta_vecinos((i,j))
                 if delta>threshold:
                     self.boolean_matrix_shape[i,j] = True
                     self.shape_set.add((i,j))
         
-    def __delta_vecinos(self, p: Tuple[int, int]) -> np.float64:
+    def __delta_vecinos(self, p: Tuple[int, int]) -> Tuple[np.float64, Tuple[int,int]]:
         i, j = p
+        max_vecino = (0,0)
         max_delta = 0.0
-
-        for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            ni, nj = i + di, j + dj
-            if 0 <= ni < self.height and 0 <= nj < self.width:
-                delta = np.linalg.norm(self.matrix[i, j] - self.matrix[ni, nj])
+        vecinos = [ (i,j-1), (i-1,j), (i+1,j), (i,j+1)]
+        for ii, jj in vecinos:
+            if 0 <= ii < self.height and 0 <= jj < self.width:
+                delta = np.linalg.norm(self.matrix[i, j] - self.matrix[ii, jj])
                 #delta = ColorUtils.delta_ciede2000(self.matrix[i, j], self.matrix[ni, nj])
-                max_delta = max(max_delta, delta)
+                if(delta>max_delta):
+                    max_delta = delta
+                    max_vecino = ii, jj
 
-        return max_delta
+        return max_delta, max_vecino
     
     def __connect_borders(self):
         top_row_length = 0
