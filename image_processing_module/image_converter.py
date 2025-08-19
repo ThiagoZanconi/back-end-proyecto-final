@@ -4,10 +4,10 @@ from matplotlib import pyplot as plt
 from numpy.typing import NDArray
 from PIL import Image
 import numpy as np
-from color_utils import ColorUtils
-from segment_analyzer_service import SegmentAnalyzerService
-from shape_analyzer_service import Segment, ShapeAnalyzerService
-from matrix_color_service import MatrixColorService
+from image_processing_module.color_utils import ColorUtils
+from image_processing_module.segment_analyzer_service import SegmentAnalyzerService
+from image_processing_module.shape_analyzer_service import Segment, ShapeAnalyzerService
+from image_processing_module.matrix_color_service import MatrixColorService
 
 def reducir_imagen(original_matrix: NDArray[np.uint8], nuevo_tamaño: Tuple[int, int]) -> NDArray[np.uint8]:
     height, width, rgb = original_matrix.shape

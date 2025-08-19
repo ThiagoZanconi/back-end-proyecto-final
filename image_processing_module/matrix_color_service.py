@@ -6,7 +6,7 @@ from typing import List, Tuple
 from numpy.typing import NDArray
 import numpy as np
 
-from color_utils import ColorUtils
+from image_processing_module.color_utils import ColorUtils
 
 @dataclass
 class ParSetColor:

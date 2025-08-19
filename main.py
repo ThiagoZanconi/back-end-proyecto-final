@@ -1,9 +1,34 @@
+from contextlib import asynccontextmanager
+import os
+import shutil
+import tempfile
 from typing import Union
 
 from fastapi import FastAPI
 
-app = FastAPI()
+from image_processing_module.image_processing_service import ImageProcessingService
 
+tmp_dir: str|None = None  # global para guardar la ruta
+
+image_processing_service: ImageProcessingService | None = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global image_processing_service
+    tmp_dir = tempfile.mkdtemp()
+    print(f"📂 Carpeta temporal creada: {tmp_dir}")
+
+    # crear instancia del service ya con tmp_dir correcto
+    image_processing_service = ImageProcessingService(tmp_dir)
+
+    yield  # <-- Aquí corre la API mientras está viva
+
+    # 🔹 Se ejecuta al apagar la API
+    if tmp_dir and os.path.exists(tmp_dir):
+        shutil.rmtree(tmp_dir)
+        print(f"🗑️ Carpeta temporal eliminada: {tmp_dir}")
+
+app = FastAPI(lifespan=lifespan)
 
 @app.get("/")
 def read_root():
@@ -13,7 +38,8 @@ def read_root():
 def read_item(item_id: int, q: Union[str, None] = None):
     return {"item_id": item_id, "q": q}
 
-@app.get("/imagen/{image_path}")
-def read_item(image_path: str):
-    path ="resources/" + image_path
-    return {"ruta": path}
+@app.post("/remove_background/{path}")
+def remove_background(path: str):
+    path = "resources/"+path
+    image_processing_service.remove_background(path)
+    return {"msg": "Fondo removido correctamente"}
