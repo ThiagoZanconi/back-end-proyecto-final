@@ -38,6 +38,11 @@ def read_root():
 def read_item(item_id: int, q: Union[str, None] = None):
     return {"item_id": item_id, "q": q}
 
+@app.post("/resize_image/")
+def read_item(path: str, new_h:int, new_w:int):
+    image_processing_service.resize_image(path, (new_h, new_w))
+    return {"msg": "Image enlarged correctly"}
+
 @app.post("/remove_background/{path}")
 def remove_background(path: str):
     path = "resources/"+path
