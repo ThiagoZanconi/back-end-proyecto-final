@@ -188,7 +188,7 @@ class MatrixColorService:
         connected_sets = self.__conjuntos_conectados()
         self.__keep_bigger_sets(connected_sets)
         self.__tapar_picos_negros()
-        self.__pulir_shape()
+        #self.__pulir_shape()
         self.__extraer_borde()
         end = time.perf_counter()
         print(f"Tiempo de ejecución: {end - start:.6f} segundos")
@@ -260,43 +260,41 @@ class MatrixColorService:
                 bottom_row_length+=1
 
     def __fill_gaps(self):
-        p_queue: deque[Tuple[int,int]] = deque()
-        visited_matrix = np.zeros((self.height, self.width), dtype=bool)
+        visited = np.zeros((self.height, self.width), dtype=bool)
+        shape_group = set()
+        background_group = set()
+
         for i in range(self.height):
             for j in range(self.width):
-                if(not self.boolean_matrix_shape[i,j]):
-                    p_queue.append((i,j))
-                else:
-                    visited_matrix[i,j] = True
-        
-        background_group = set()
-        shape_group = set()
-        while p_queue:
-            shape = True
-            i, j = p_queue.popleft()
-            group: set[Tuple[int,int]] = set()
-            if(not visited_matrix[i,j]):
-                group.add((i,j))
-                visited_matrix[i,j] = True
-                vecinos = [ (i,j-1), (i-1,j), (i+1,j), (i,j+1)]
-                group_queue: deque[Tuple[int,int]] = deque(vecinos)
-                while(group_queue):
-                    i, j = group_queue.popleft()
-                    if(0 <= i < self.height and 0 <= j < self.width):
-                        if(not visited_matrix[i,j]):
-                            visited_matrix[i,j] = True
-                            group.add((i,j))
-                            vecinos = [ (i,j-1), (i-1,j), (i+1,j), (i,j+1)]
-                            group_queue.extend(vecinos)
+                if not self.boolean_matrix_shape[i, j] and not visited[i, j]:
+                    # Nuevo grupo de fondo potencial
+                    group = set()
+                    queue = deque([(i, j)])
+                    visited[i, j] = True
+                    closed = True  # asumimos cerrado, si tocamos borde => no cerrado
+
+                    while queue:
+                        x, y = queue.popleft()
+                        group.add((x, y))
+
+                        for nx, ny in [(x-1,y), (x+1,y), (x,y-1), (x,y+1)]:
+                            if 0 <= nx < self.height and 0 <= ny < self.width:
+                                if not visited[nx, ny] and not self.boolean_matrix_shape[nx, ny]:
+                                    visited[nx, ny] = True
+                                    queue.append((nx, ny))
+                            else:
+                                closed = False
+
+                    # Clasificación final del grupo
+                    if closed:
+                        shape_group.update(group)
                     else:
-                        shape = False
-            if(shape):
-                shape_group.update(group)
-            else:
-                background_group.update(group)
-        for i,j in shape_group:
-            self.boolean_matrix_shape[i,j] = True
-            self.shape_set.add((i,j))
+                        background_group.update(group)
+
+        # Actualizar matriz
+        for i, j in shape_group:
+            self.boolean_matrix_shape[i, j] = True
+            self.shape_set.add((i, j))
         self.background_set.update(background_group)
     
     def __pulir_shape(self):

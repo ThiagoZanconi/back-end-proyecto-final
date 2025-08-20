@@ -5,7 +5,7 @@ from typing import List, Tuple
 from numpy.typing import NDArray
 
 import numpy as np
-from shape_analyzer_service import Segment
+from image_processing_module.shape_analyzer_service import Segment
 
 @dataclass
 class Delta:

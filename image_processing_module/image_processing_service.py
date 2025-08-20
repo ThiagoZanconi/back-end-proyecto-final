@@ -1,4 +1,3 @@
-import os
 from numpy.typing import NDArray
 from PIL import Image
 import numpy as np
@@ -38,9 +37,9 @@ class ImageProcessingService:
 
     def remove_background(self, path:str):
         rgb_matrix = self.__get_rgb_matrix(path)
-        matriz_128 = self.__reduce_image(rgb_matrix, (128, 128))
-        lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(matriz_128)
-        matrix_color_service = MatrixColorService(lab_matrix, delta_threshold = 10)
+        #matriz_128 = self.__reduce_image(rgb_matrix, (128, 128))
+        lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(rgb_matrix)
+        matrix_color_service = MatrixColorService(lab_matrix, delta_threshold = 6)
         lab_matrix = matrix_color_service.remover_fondo()
         rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(lab_matrix)
         self.__save_image(rgb_matrix)
