@@ -43,8 +43,7 @@ def read_item(path: str, new_h:int, new_w:int):
     image_processing_service.resize_image(path, (new_h, new_w))
     return {"msg": "Image enlarged correctly"}
 
-@app.post("/remove_background/{path}")
+@app.post("/remove_background/")
 def remove_background(path: str):
-    path = "resources/"+path
     image_processing_service.remove_background(path)
     return {"msg": "Fondo removido correctamente"}
