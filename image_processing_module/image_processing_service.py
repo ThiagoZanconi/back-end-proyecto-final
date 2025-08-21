@@ -36,17 +36,26 @@ class ImageProcessingService:
         return action
 
     def remove_background(self, path:str):
-        rgb_matrix = self.__get_rgb_matrix(path)
-        lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(rgb_matrix)
-        matrix_color_service = MatrixColorService(lab_matrix, delta_threshold = 6)
+        matrix_color_service = self.__instanciate_matrix_color_service(path)
         lab_matrix = matrix_color_service.remover_fondo()
         rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(lab_matrix)
         self.__save_image(rgb_matrix)
 
-    def resize_image(self, path:str, nuevo_tamaño: Tuple[int, int]) -> NDArray[np.uint8]:
+    def resize_image(self, path:str, nuevo_tamaño: Tuple[int, int]):
         rgb_matrix = self.__get_rgb_matrix(path)
         reduced = self.__resize_image(rgb_matrix, nuevo_tamaño)
         self.__save_image(reduced)
+
+    def extract_border(self, path:str):
+        matrix_color_service = self.__instanciate_matrix_color_service(path)
+        lab_matrix_border = matrix_color_service.border()
+        rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(lab_matrix_border)
+        self.__save_image(rgb_matrix)
+
+    def __instanciate_matrix_color_service(self, path:str) -> MatrixColorService:
+        rgb_matrix = self.__get_rgb_matrix(path)
+        lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(rgb_matrix)
+        return MatrixColorService(lab_matrix, delta_threshold = 6)
 
     def __get_rgb_matrix(self, path:str) -> NDArray[np.uint8]:
         image = Image.open(path).convert("RGB")  # Asegura que sea RGB

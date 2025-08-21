@@ -3,9 +3,7 @@ import os
 import shutil
 import tempfile
 from typing import Union
-
 from fastapi import FastAPI
-
 from image_processing_module.image_processing_service import ImageProcessingService
 
 tmp_dir: str|None = None  # global para guardar la ruta
@@ -38,6 +36,10 @@ def read_root():
 def read_item(item_id: int, q: Union[str, None] = None):
     return {"item_id": item_id, "q": q}
 
+@app.get("/tmp_folder_path/")
+def read_item():
+    return {"tmp_folder_path": tmp_dir}
+
 @app.post("/resize_image/")
 def read_item(path: str, new_h:int, new_w:int):
     image_processing_service.resize_image(path, (new_h, new_w))
@@ -47,3 +49,8 @@ def read_item(path: str, new_h:int, new_w:int):
 def remove_background(path: str):
     image_processing_service.remove_background(path)
     return {"msg": "Fondo removido correctamente"}
+
+@app.post("/extract_border/")
+def extract_border(path: str):
+    image_processing_service.extract_border(path)
+    return {"msg": "Image enlarged correctly"}

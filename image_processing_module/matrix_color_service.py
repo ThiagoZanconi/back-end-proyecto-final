@@ -20,24 +20,17 @@ class ConjuntoConectado:
     b: Tuple[int,int]
 
 class MatrixColorService:
-    height: int
-    width: int
-    matrix: NDArray[np.float64]
-    boolean_matrix_shape: NDArray[np.bool_]
-    boolean_matrix_border: NDArray[np.bool_]
-    background_set: set[Tuple[int,int]] = set()
-    border_set: set[Tuple[int,int]] = set()
-    shape_set: set[Tuple[int,int]] = set()
-    background_colors = set()
-
-    # Contador para todos los colores
-    __color_counter =  Counter()
-
-    def __init__(self, matrix: NDArray[np.float64], delta_threshold = 8):
+    def __init__(self, matrix: NDArray[np.float64], delta_threshold=8):
         self.height, self.width, lab = matrix.shape
         self.matrix = matrix
         self.boolean_matrix_shape = np.zeros((self.height, self.width), dtype=bool)
         self.boolean_matrix_border = np.zeros((self.height, self.width), dtype=bool)
+        self.background_set: set[Tuple[int,int]] = set()
+        self.border_set: set[Tuple[int,int]] = set()
+        self.shape_set: set[Tuple[int,int]] = set()
+        self.background_colors = set()
+        self.__color_counter = Counter()
+        
         self.__shape_matrix(delta_threshold)
         for i in range(self.height):
             for j in range(self.width):
