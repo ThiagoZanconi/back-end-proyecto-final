@@ -2,8 +2,9 @@ from contextlib import asynccontextmanager
 import os
 import shutil
 import tempfile
-from typing import Union
+from typing import List, Union
 from fastapi import FastAPI
+import numpy as np
 from image_processing_module.image_processing_service import ImageProcessingService
 
 tmp_dir: str|None = None  # global para guardar la ruta
@@ -40,8 +41,24 @@ def read_item(item_id: int, q: Union[str, None] = None):
 def read_item():
     return {"tmp_folder_path": tmp_dir}
 
+@app.get("/most_different_colors/")
+def most_different_colors(path: str, n: int = 10, delta_threshold: float = 3):
+    colors: List[np.ndarray] = image_processing_service.get_main_different_colors(path, n, delta_threshold)
+    colors_list = [c.tolist() for c in colors]
+    return {"colors": colors_list}
+
+@app.post("/undo/")
+def undo():
+    image_processing_service.undo()
+    return {"msg": "Undo succesful"}
+
+@app.post("/redo/")
+def redo():
+    image_processing_service.redo()
+    return {"msg": "Redo succesful"}
+
 @app.post("/resize_image/")
-def read_item(path: str, new_h:int, new_w:int):
+def resize_image(path: str, new_h:int, new_w:int):
     image_processing_service.resize_image(path, (new_h, new_w))
     return {"msg": "Image enlarged correctly"}
 

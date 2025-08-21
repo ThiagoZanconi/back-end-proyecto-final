@@ -43,19 +43,6 @@ def unify_sub_matrices_color(original_matrix: NDArray[np.float64], div_factor = 
 
     return original_matrix
 
-def blacken_background(original_matrix: NDArray[np.float64]) -> NDArray[np.float64]:
-    height, width, rgb = original_matrix.shape
-    counter = Counter()
-    for i in range(height):
-        for j in range(width):
-            counter[tuple(original_matrix[i,j])]+=1
-    most_common = counter.most_common(1)[0][0]
-    for i in range(height):
-        for j in range(width):
-            if(tuple(original_matrix[i,j]) == most_common):
-                original_matrix[i, j] = [0,0,0]
-    return original_matrix
-
 def draw_shape(original_matrix: NDArray[np.float64]) -> NDArray[np.float64]:
     height, width, rgb = original_matrix.shape
     shape_matrix = np.zeros((height, width, 3), dtype=np.float64)
@@ -105,40 +92,6 @@ def __closest_color(color: np.ndarray, palette: NDArray[np.float64]) -> NDArray[
             closest_color = palette[i]
 
     return closest_color
-
-def fill_image_gaps(original_matrix: NDArray[np.float64], d: int = 10) -> NDArray[np.float64]:
-    height, width, _ = original_matrix.shape
-    for i in range(height):
-        black_row = 0
-        for j in range(width):
-            if np.array_equal(original_matrix[i, j], [0.0, 0.0, 0.0]):
-                black_row += 1
-            else:
-                if black_row < d and black_row > 0:
-                    original_matrix = __paint_row_segment(original_matrix, original_matrix[i, j], i, black_row, j - 1)
-                black_row = 0
-
-    for j in range(width):
-        black_row = 0
-        for i in range(height):
-            if np.array_equal(original_matrix[i, j], [0.0, 0.0, 0.0]):
-                black_row += 1
-            else:
-                if black_row < d and black_row > 0:
-                    original_matrix = __paint_column_segment(original_matrix, original_matrix[i, j], j, black_row, i - 1)
-                black_row = 0
-
-    return original_matrix
-
-def __paint_row_segment(original_matrix: NDArray[np.float64], color: np.ndarray, i:int, d: int, end_point: int) -> NDArray[np.uint8]:
-    for j in range(d):
-        original_matrix[i,end_point-j] = color
-    return original_matrix
-
-def __paint_column_segment(original_matrix: NDArray[np.float64], color: np.ndarray, j:int, d: int, end_point: int) -> NDArray[np.uint8]:
-    for i in range(d):
-        original_matrix[end_point-i,j] = color
-    return original_matrix
 
 def border_list(path:str)-> List[Tuple[int,int]]:
     sword_image = Image.open(path).convert("RGB")  # Asegura que sea RGB
@@ -270,8 +223,6 @@ resultado = draw_main_colors(lab_matrix,14)
 resultado = unify_sub_matrices_color(resultado,div_factor=128)
 resultado = unify_sub_matrices_color(resultado,div_factor=64)
 resultado = unify_sub_matrices_color(resultado,div_factor=32)
-resultado = blacken_background(resultado)
-resultado = fill_image_gaps(resultado,5)
 '''
 
 '''
