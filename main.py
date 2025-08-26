@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 import os
 import shutil
 import tempfile
-from typing import List, Union
+from typing import List
 from fastapi import FastAPI
 import numpy as np
 from image_processing_module.image_processing_service import ImageProcessingService
@@ -33,10 +33,6 @@ app = FastAPI(lifespan=lifespan)
 def read_root():
     return {"Hello": "World"}
 
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: Union[str, None] = None):
-    return {"item_id": item_id, "q": q}
-
 @app.get("/tmp_folder_path/")
 def read_item():
     return {"tmp_folder_path": tmp_dir}
@@ -44,7 +40,9 @@ def read_item():
 @app.get("/most_different_colors/")
 def most_different_colors(path: str, n: int = 10, delta_threshold: float = 3):
     colors: List[np.ndarray] = image_processing_service.get_main_different_colors(path, n, delta_threshold)
-    colors_list = [c.tolist() for c in colors]
+    colors_list = []
+    for c in colors:
+        colors_list.append([int(c[0]), int(c[1]), int(c[2])])
     return {"colors": colors_list}
 
 @app.post("/undo/")

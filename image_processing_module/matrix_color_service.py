@@ -149,13 +149,14 @@ class MatrixColorService:
     def get_main_different_colors(self, n=10, delta_threshold: int = 3) -> List[np.uint8]:
         most_common, _ = self.__color_counter.most_common(1)[0]
         main_different_colors = [most_common]
-        for color, n in self.__color_counter.most_common():
+        for color, _ in self.__color_counter.most_common():
             es_diferente = all( ColorUtils.delta_ciede2000(color, c) > delta_threshold for c in main_different_colors )
             if es_diferente:
                 main_different_colors.append(color)
 
             if(len(main_different_colors)==n):
                 break
+        print("Colors: ", main_different_colors)
         return main_different_colors
     
     def __delta_pq(self, points: set[Tuple[int,int]]) -> List[Tuple[float, Tuple[Tuple[int,int],Tuple[int,int]]]]:
