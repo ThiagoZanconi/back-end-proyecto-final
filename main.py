@@ -3,9 +3,10 @@ import os
 import shutil
 import tempfile
 from typing import List
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 import numpy as np
 from image_processing_module.image_processing_service import ImageProcessingService
+from request_types.gamma_request import GammaRequest
 
 tmp_dir: str|None = None  # global para guardar la ruta
 
@@ -68,4 +69,24 @@ def remove_background(path: str):
 @app.post("/extract_border/")
 def extract_border(path: str):
     image_processing_service.extract_border(path)
+    return {"msg": "Image enlarged correctly"}
+
+@app.post("/change_gamma_colors/")
+def change_gamma_colors(path: str, req: GammaRequest, delta_threshold: float = 3.0):
+    if req.color[0] < 0 or req.color[0] > 100:
+        raise HTTPException(
+            status_code=422,
+            detail="El valor L debe estar entre 0 y 100"
+        )
+    if req.color[1] < -128 or req.color[1] > 128:
+        raise HTTPException(
+            status_code=422,
+            detail="El valor a debe estar entre -128 y 128"
+        )
+    if req.color[2] < -128 or req.color[2] > 128:
+        raise HTTPException(
+            status_code=422,
+            detail="El valor b debe estar entre -128 y 128"
+        )
+    image_processing_service.change_gamma_colors(path, req.color, req.delta, delta_threshold)
     return {"msg": "Image enlarged correctly"}

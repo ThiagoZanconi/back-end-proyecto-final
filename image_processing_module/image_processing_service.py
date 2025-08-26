@@ -52,7 +52,13 @@ class ImageProcessingService:
         rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(lab_matrix_border)
         self.__save_image(rgb_matrix)
 
-    def get_main_different_colors(self, path: str, n=10, delta_threshold: int = 3) -> List[np.uint8]:
+    def change_gamma_colors(self, path: str, color: List[int], delta: List[int], delta_threshold: float = 3.0):
+        matrix_color_service = self.__instanciate_matrix_color_service(path)
+        lab_matrix = matrix_color_service.change_gamma_colors(color, delta, delta_threshold)
+        rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(lab_matrix)
+        self.__save_image(rgb_matrix)
+
+    def get_main_different_colors(self, path: str, n=10, delta_threshold: float = 3.0) -> List[np.uint8]:
         matrix_color_service = self.__instanciate_matrix_color_service(path)
         return matrix_color_service.get_main_different_colors(n, delta_threshold)
 

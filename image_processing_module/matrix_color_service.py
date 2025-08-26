@@ -146,7 +146,7 @@ class MatrixColorService:
         self.border_set = border_set
         return border_set
     
-    def get_main_different_colors(self, n=10, delta_threshold: int = 3) -> List[np.uint8]:
+    def get_main_different_colors(self, n=10, delta_threshold: float = 3.0) -> List[np.uint8]:
         most_common, _ = self.__color_counter.most_common(1)[0]
         main_different_colors = [most_common]
         for color, _ in self.__color_counter.most_common():
@@ -158,6 +158,23 @@ class MatrixColorService:
                 break
         print("Colors: ", main_different_colors)
         return main_different_colors
+    
+    def change_gamma_colors(self, color: List[int], delta: List[int], delta_threshold: float = 3.0) -> NDArray[np.float64]:
+        color_arr = np.array(color, dtype=np.float64)
+        delta_arr = np.array(delta, dtype=np.float64)
+        toReturn = self.matrix.copy()
+        for i in range(self.height):
+            for j in range(self.width):
+                if (ColorUtils.delta_ciede2000(color_arr, self.matrix[i,j]) <= delta_threshold):
+                    new_val = self.matrix[i, j] + delta_arr
+
+                    new_val[0] = np.clip(new_val[0], 0, 100)      # L
+                    new_val[1] = np.clip(new_val[1], -128, 128)   # a
+                    new_val[2] = np.clip(new_val[2], -128, 128)   # b
+
+                    toReturn[i, j] = new_val
+
+        return toReturn
     
     def __delta_pq(self, points: set[Tuple[int,int]]) -> List[Tuple[float, Tuple[Tuple[int,int],Tuple[int,int]]]]:
         delta_pq: List[Tuple[float, Tuple[Tuple[int,int],Tuple[int,int]]]] = []
