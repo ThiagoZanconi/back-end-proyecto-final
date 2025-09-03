@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException
 import numpy as np
 from image_processing_module.image_processing_service import ImageProcessingService
 from request_types.gamma_request import GammaRequest
+from ai_assistant_module.ollama_chat_service import OllamaChatService
 
 tmp_dir: str|None = None  # global para guardar la ruta
 
@@ -45,6 +46,11 @@ def most_different_colors(path: str, n: int = 10, delta_threshold: float = 3):
     for c in colors:
         colors_list.append([int(c[0]), int(c[1]), int(c[2])])
     return {"colors": colors_list}
+
+@app.post("/chat/")
+def chat(prompt: str, model: str = "deepseek-r1:8b"):
+    response = OllamaChatService.chat(prompt, model)
+    return {"response": response}
 
 @app.post("/undo/")
 def undo():
