@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import List, Tuple
 import numpy as np
 from numpy.typing import NDArray
 from skimage.color import rgb2lab,lab2rgb
@@ -85,6 +85,16 @@ class ColorUtils:
         rgb_uint8 = (rgb_normalized * 255).clip(0, 255).astype(np.uint8)
 
         return rgb_uint8
+    
+    @staticmethod
+    def lab_color_list_to_rgb(lab_color_list: List[np.uint8]) -> List[np.uint8]:
+        rgb_color_list = []
+        for lab in lab_color_list:
+            lab_reshaped = np.array(lab, dtype=np.float64).reshape(1, 1, 3)
+            rgb_normalized = lab2rgb(lab_reshaped)
+            rgb_uint8 = (rgb_normalized * 255).clip(0, 255).astype(np.uint8)
+            rgb_color_list.append(rgb_uint8[0, 0])
+        return rgb_color_list
 
     @staticmethod
     def delta_ciede2000(lab1, lab2) -> float:

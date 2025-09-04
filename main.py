@@ -77,6 +77,19 @@ def extract_border(path: str):
     image_processing_service.extract_border(path)
     return {"msg": "Image enlarged correctly"}
 
+@app.post("/change_colors/")
+def change_colors(path: str, user_input: str, n: int = 10, delta_threshold: float = 3.0, think: bool = False):
+    colors: List[np.ndarray] = image_processing_service.get_main_different_colors_rgb(path, n, delta_threshold)
+    print(colors)
+    colors_list = []
+    for c in colors:
+        colors_list.append([int(c[0]), int(c[1]), int(c[2])])
+    response = OllamaChatService.change_color(user_input, colors_list, think = think)
+    return {
+        "colors": colors_list,
+        "color_to_change": response
+    }
+
 @app.post("/change_gamma_colors/")
 def change_gamma_colors(path: str, req: GammaRequest, delta_threshold: float = 3.0):
     if req.color[0] < 0 or req.color[0] > 100:
