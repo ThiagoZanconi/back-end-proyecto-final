@@ -156,7 +156,6 @@ class MatrixColorService:
 
             if(len(main_different_colors)==n):
                 break
-        print("Colors: ", main_different_colors)
         return main_different_colors
     
     def change_gamma_colors(self, color: List[int], delta: List[int], delta_threshold: float = 3.0) -> NDArray[np.float64]:

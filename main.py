@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException
 import numpy as np
 from image_processing_module.image_processing_service import ImageProcessingService
 from request_types.gamma_request import GammaRequest
-from ai_assistant_module.ollama_chat_service import OllamaChatService
+from routers import ai_assistant
 
 tmp_dir: str|None = None  # global para guardar la ruta
 
@@ -29,7 +29,13 @@ async def lifespan(app: FastAPI):
         shutil.rmtree(tmp_dir)
         print(f"🗑️ Carpeta temporal eliminada: {tmp_dir}")
 
+def get_image_service() -> ImageProcessingService:
+    if image_processing_service is None:
+        raise HTTPException(status_code=500, detail="ImageProcessingService no está inicializado")
+    return image_processing_service
+
 app = FastAPI(lifespan=lifespan)
+app.include_router(ai_assistant.router)
 
 @app.get("/")
 def read_root():
@@ -41,16 +47,11 @@ def read_item():
 
 @app.get("/most_different_colors/")
 def most_different_colors(path: str, n: int = 10, delta_threshold: float = 3):
-    colors: List[np.ndarray] = image_processing_service.get_main_different_colors(path, n, delta_threshold)
+    colors: List[np.ndarray] = image_processing_service.get_main_different_colors_rgb(path, n, delta_threshold)
     colors_list = []
     for c in colors:
         colors_list.append([int(c[0]), int(c[1]), int(c[2])])
     return {"colors": colors_list}
-
-@app.post("/chat/")
-def chat(prompt: str, model: str = "deepseek-r1:8b"):
-    response = OllamaChatService.chat(prompt, model)
-    return {"response": response}
 
 @app.post("/undo/")
 def undo():
@@ -76,19 +77,6 @@ def remove_background(path: str):
 def extract_border(path: str):
     image_processing_service.extract_border(path)
     return {"msg": "Image enlarged correctly"}
-
-@app.post("/change_colors/")
-def change_colors(path: str, user_input: str, n: int = 10, delta_threshold: float = 3.0, think: bool = False):
-    colors: List[np.ndarray] = image_processing_service.get_main_different_colors_rgb(path, n, delta_threshold)
-    print(colors)
-    colors_list = []
-    for c in colors:
-        colors_list.append([int(c[0]), int(c[1]), int(c[2])])
-    response = OllamaChatService.change_color(user_input, colors_list, think = think)
-    return {
-        "colors": colors_list,
-        "color_to_change": response
-    }
 
 @app.post("/change_gamma_colors/")
 def change_gamma_colors(path: str, req: GammaRequest, delta_threshold: float = 3.0):
