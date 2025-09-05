@@ -24,4 +24,3 @@ def change_colors(path: str, user_input: str, n: int = 10, delta_threshold: floa
 def chat(prompt: str, model: str = "deepseek-r1:8b"):
     response = OllamaChatService.chat(prompt, model)
     return {"response": response}
-
