@@ -15,6 +15,7 @@ class OllamaChatService:
         ]
 
         response = chat(model, messages, think=think)
+        print("Think: ", response.message.thinking)
 
         return response.message.content
     
@@ -29,8 +30,8 @@ class OllamaChatService:
         return OllamaChatService.chat(prompt, model, think)
     
     @staticmethod
-    def get_item(user_input: str, model: str = "deepseek-r1:8b", think = False) -> str:
-        prompt = PromptService.get_item_prompt(user_input)
+    def get_item_color(user_input: str, color_list:List[Tuple[int,int,int]], model: str = "deepseek-r1:8b", think = False) -> str:
+        prompt = PromptService.get_item_prompt(user_input, color_list)
         return OllamaChatService.chat(prompt, model, think)
     
     @staticmethod

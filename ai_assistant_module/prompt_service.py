@@ -28,11 +28,12 @@ class PromptService:
         )
     
     @staticmethod
-    def get_item_prompt(user_input: str) -> str:
+    def get_item_prompt(user_input: str, color_list:List[Tuple[int,int,int]]) -> str:
         return (
-            "You are an assistant that extracts the main item from a user's input.\n"
-            "Return only the name of the item, nothing else.\n\n"
+            "You are an assistant that extracts the color of the main item from a user's input.\n"
+            "Return only the rgb color of the item, nothing else.\n\n"
             f"User input: {user_input}"
+            f"The list of colors is: {color_list}\n"
         )
     
     @staticmethod

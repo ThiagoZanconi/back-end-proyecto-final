@@ -45,10 +45,12 @@ def __change_item_color(path: str, user_input: str, n: int = 10, delta_threshold
     colors_list = []
     for c in colors:
         colors_list.append([int(c[0]), int(c[1]), int(c[2])])
-    response = OllamaChatService.change_item_color(user_input, colors_list, think = think)
+    item_color = OllamaChatService.get_item_color(user_input, colors, think = think)
+    color = OllamaChatService.get_color(user_input, think = think)
     return {
         "colors": colors_list,
-        "color_to_change": response
+        "new_color": color,
+        "item_color": item_color
     }
 
 def __change_background_color(path: str):
