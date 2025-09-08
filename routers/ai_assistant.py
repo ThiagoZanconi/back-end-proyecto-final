@@ -14,7 +14,7 @@ def change_colors(path: str, user_input: str, n: int = 10, delta_threshold: floa
     colors_list = []
     for c in colors:
         colors_list.append([int(c[0]), int(c[1]), int(c[2])])
-    response = OllamaChatService.change_color(user_input, colors_list, think = think)
+    response = OllamaChatService.change_item_color(user_input, colors_list, think = think)
     return {
         "colors": colors_list,
         "color_to_change": response
@@ -24,3 +24,38 @@ def change_colors(path: str, user_input: str, n: int = 10, delta_threshold: floa
 def chat(prompt: str, model: str = "deepseek-r1:8b"):
     response = OllamaChatService.chat(prompt, model)
     return {"response": response}
+
+@router.post("/perform_action/")
+def perform_action(path: str, user_input: str, n: int = 10, delta_threshold: float = 3.0, think: bool = False):
+    action = OllamaChatService.select_action(user_input, think = think)
+    if action.strip() == "1":
+        return __change_item_color(path, user_input, n, delta_threshold, think)
+    elif action.strip() == "2":
+        return __change_background_color(path)
+    else:
+        return {
+            "action": "Unknown",
+            "msg": "No valid action selected"
+        }
+
+def __change_item_color(path: str, user_input: str, n: int = 10, delta_threshold: float = 3.0, think: bool = False):
+    from main import get_image_service
+    image_processing_service: ImageProcessingService = get_image_service()
+    colors: List[np.ndarray] = image_processing_service.get_main_different_colors_rgb(path, n, delta_threshold)
+    colors_list = []
+    for c in colors:
+        colors_list.append([int(c[0]), int(c[1]), int(c[2])])
+    response = OllamaChatService.change_item_color(user_input, colors_list, think = think)
+    return {
+        "colors": colors_list,
+        "color_to_change": response
+    }
+
+def __change_background_color(path: str):
+    from main import get_image_service
+    image_processing_service: ImageProcessingService = get_image_service()
+    #image_processing_service.remove_background(path)
+    return {
+        "msg": "Background removed successfully"
+    }
+    

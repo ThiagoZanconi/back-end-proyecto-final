@@ -19,6 +19,21 @@ class OllamaChatService:
         return response.message.content
     
     @staticmethod
-    def change_color(user_input: str, color_list:List[Tuple[int,int,int]], model: str = "deepseek-r1:8b", think = False) -> str:
+    def change_item_color(user_input: str, color_list:List[Tuple[int,int,int]], model: str = "deepseek-r1:8b", think = False) -> str:
         prompt = PromptService.change_color_prompt(user_input, color_list)
+        return OllamaChatService.chat(prompt, model, think)
+    
+    @staticmethod
+    def select_action(user_input: str, model: str = "deepseek-r1:8b", think = False) -> str:
+        prompt = PromptService.select_action_prompt(user_input)
+        return OllamaChatService.chat(prompt, model, think)
+    
+    @staticmethod
+    def get_item(user_input: str, model: str = "deepseek-r1:8b", think = False) -> str:
+        prompt = PromptService.get_item_prompt(user_input)
+        return OllamaChatService.chat(prompt, model, think)
+    
+    @staticmethod
+    def get_color(user_input: str, model: str = "deepseek-r1:8b", think = False) -> str:
+        prompt = PromptService.get_color_prompt(user_input)
         return OllamaChatService.chat(prompt, model, think)
