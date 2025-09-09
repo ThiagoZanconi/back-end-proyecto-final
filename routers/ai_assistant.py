@@ -28,9 +28,9 @@ def chat(prompt: str, model: str = "deepseek-r1:8b"):
 @router.post("/perform_action/")
 def perform_action(path: str, user_input: str, n: int = 10, delta_threshold: float = 3.0, think: bool = False):
     action = OllamaChatService.select_action(user_input, think = think)
-    if action.strip() == "1":
+    if "1" in action:
         return __change_item_color(path, user_input, n, delta_threshold, think)
-    elif action.strip() == "2":
+    elif "2" in action:
         return __change_background_color(path)
     else:
         return {
@@ -45,12 +45,14 @@ def __change_item_color(path: str, user_input: str, n: int = 10, delta_threshold
     colors_list = []
     for c in colors:
         colors_list.append([int(c[0]), int(c[1]), int(c[2])])
-    item_color = OllamaChatService.get_item_color(user_input, colors, think = think)
-    color = OllamaChatService.get_color(user_input, think = think)
+    item = OllamaChatService.get_item(user_input, think = think)
+    item_color = OllamaChatService.get_item_color(item, colors_list, think = think)
+    color = OllamaChatService.get_new_color(user_input, think = think)
     return {
         "colors": colors_list,
-        "new_color": color,
-        "item_color": item_color
+        "item": item,
+        "item_color": item_color,
+        "new_color": color
     }
 
 def __change_background_color(path: str):

@@ -18,6 +18,14 @@ class PromptService:
         )
     
     @staticmethod
+    def get_item_prompt(user_input: str) -> str:
+        return (
+            "You are an assistant that extracts the main item from a user's input.\n"
+            "Return only the name of the item, nothing else.\n\n"
+            f"User input: {user_input}"
+        )
+    
+    @staticmethod
     def select_action_prompt(user_input: str) -> str:
         return (
             "You are an assistant that helps users choose between a list of actions, from a user's input.\n"
@@ -28,19 +36,19 @@ class PromptService:
         )
     
     @staticmethod
-    def get_item_prompt(user_input: str, color_list:List[Tuple[int,int,int]]) -> str:
+    def get_item_color_prompt(item: str, color_list:List[Tuple[int,int,int]]) -> str:
         return (
-            "You are an assistant that extracts the color of the main item from a user's input.\n"
-            "Return only the rgb color of the item, nothing else.\n\n"
-            f"User input: {user_input}"
-            f"The list of colors is: {color_list}\n"
+            "Return the RGB color that best matches the provided item \n"
+            "Return only the RGB color of the item, nothing else.\n\n"
+            f"Item: {item}"
+            f"Color list: {color_list}\n"
         )
     
     @staticmethod
-    def get_color_prompt(user_input: str) -> str:
+    def get_new_color_prompt(user_input: str) -> str:
         return (
-            "You are an assistant that extracts the main color from a user's input.\n"
-            "Return only the rgb code of the color, nothing else.\n\n"
+            "You are an assistant that extracts the RGB code of the main color from a user's input.\n"
+            "Return only the RGB code of the color, nothing else.\n\n"
             "Example: [25,240,35]\n"
             f"User input: {user_input}"
         )
