@@ -38,10 +38,10 @@ class PromptService:
     @staticmethod
     def get_item_color_prompt(item: str, color_list:List[Tuple[int,int,int]]) -> str:
         return (
-            "Return the RGB color that best matches the provided item \n"
+            "Return the RGB color that is most similar to the provided item \n"
             "Return only the RGB color of the item, nothing else.\n\n"
+            f"RGB Color list: {color_list}\n"
             f"Item: {item}"
-            f"Color list: {color_list}\n"
         )
     
     @staticmethod
