@@ -26,17 +26,14 @@ def chat(prompt: str, model: str = "deepseek-r1:8b"):
     return {"response": response}
 
 @router.post("/perform_action/")
-def perform_action(path: str, user_input: str, n: int = 10, delta_threshold: float = 3.0, think: bool = False):
+def perform_action(path: str, user_input: str, n: int = 10, delta_threshold: float = 3.0, think: bool = False, model: str = "deepseek-r1:8b"):
     action = OllamaChatService.select_action(user_input, think = think)
     if "1" in action:
         return __change_item_color(path, user_input, n, delta_threshold, think)
     elif "2" in action:
         return __change_background_color(path)
     else:
-        return {
-            "action": "Unknown",
-            "msg": "No valid action selected"
-        }
+        return chat(user_input, model)
 
 def __change_item_color(path: str, user_input: str, n: int = 10, delta_threshold: float = 3.0, think: bool = False):
     from main import get_image_service
