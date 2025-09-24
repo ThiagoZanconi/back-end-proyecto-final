@@ -9,13 +9,14 @@ from image_processing_module.image_processing_service import ImageProcessingServ
 from request_types.gamma_request import GammaRequest
 from routers import ai_assistant
 
-tmp_dir: str|None = None  # global para guardar la ruta
+#tmp_dir: str|None = None  # global para guardar la ruta
 
 image_processing_service: ImageProcessingService | None = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global image_processing_service
+    global tmp_dir
     tmp_dir = tempfile.mkdtemp()
     print(f"📂 Carpeta temporal creada: {tmp_dir}")
 
@@ -43,7 +44,8 @@ def read_root():
 
 @app.get("/tmp_folder_path/")
 def read_item():
-    return {"tmp_folder_path": tmp_dir}
+    print("Tmp dir:", tmp_dir)
+    return {"tmp_folder_path": f"{tmp_dir}"}
 
 @app.get("/most_different_colors/")
 def most_different_colors(path: str, n: int = 10, delta_threshold: float = 3):
