@@ -1,5 +1,5 @@
-from flux_1_schnell import Flux1Schnell
-from flux_1_dev import Flux1Dev
+from ai_image_generator_module.flux_1_schnell import Flux1Schnell
+from ai_image_generator_module.flux_1_dev import Flux1Dev
 
 
 if __name__ == "__main__":

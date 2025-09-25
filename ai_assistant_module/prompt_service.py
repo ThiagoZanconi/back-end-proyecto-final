@@ -5,7 +5,9 @@ class PromptService:
     ACTION_LIST = [
         "1: Change item color",
         "2: Change background color",
-        "3: Chat"
+        "3: Generate image",
+        "4: General chat",
+        "5: Other"
     ]
     
     @staticmethod

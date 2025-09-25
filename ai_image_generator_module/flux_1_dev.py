@@ -1,4 +1,4 @@
-from model import FluxModel
+from ai_image_generator_module.model import FluxModel
 
 
 class Flux1Dev(FluxModel):

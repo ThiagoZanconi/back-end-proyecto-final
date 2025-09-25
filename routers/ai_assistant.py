@@ -25,6 +25,14 @@ def chat(prompt: str, model: str = "deepseek-r1:8b"):
     response = OllamaChatService.chat(prompt, model)
     return {"response": response}
 
+@router.post("/generate_image/")
+def generate_image(prompt:str):
+    from main import tmp_dir
+    from ai_image_generator_module.sdxl_turbo import SDXLTurbo
+    path = tmp_dir + "\generated_image.png"
+    SDXLTurbo.text_to_image(prompt, path)
+    return {"image_path": path}
+
 @router.post("/perform_action/")
 def perform_action(path: str, user_input: str, n: int = 10, delta_threshold: float = 3.0, think: bool = False, model: str = "deepseek-r1:8b"):
     action = OllamaChatService.select_action(user_input, think = think)
@@ -32,8 +40,12 @@ def perform_action(path: str, user_input: str, n: int = 10, delta_threshold: flo
         return __change_item_color(path, user_input, n, delta_threshold, think)
     elif "2" in action:
         return __change_background_color(path)
-    else:
+    elif "3" in action:
+        return generate_image(user_input)
+    elif "4" in action:
         return chat(user_input, model)
+    else:
+        return {"response": "Invalid user input. Please try again."}
 
 def __change_item_color(path: str, user_input: str, n: int = 10, delta_threshold: float = 3.0, think: bool = False):
     from main import get_image_service
