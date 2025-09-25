@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 import os
+from pathlib import Path
 import shutil
 import tempfile
 from typing import List
@@ -10,6 +11,7 @@ from request_types.gamma_request import GammaRequest
 from routers import ai_assistant
 
 #tmp_dir: str|None = None  # global para guardar la ruta
+file_path = Path(__file__).parent.parent / "front-end-proyecto-final" / "image-editor" / "public" 
 
 image_processing_service: ImageProcessingService | None = None
 

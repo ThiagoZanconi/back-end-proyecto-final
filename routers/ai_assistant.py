@@ -27,9 +27,9 @@ def chat(prompt: str, model: str = "deepseek-r1:8b"):
 
 @router.post("/generate_image/")
 def generate_image(prompt:str):
-    from main import tmp_dir
+    from main import file_path
     from ai_image_generator_module.sdxl_turbo import SDXLTurbo
-    path = tmp_dir + "\generated_image.png"
+    path = file_path / "generated_image.png"
     SDXLTurbo.text_to_image(prompt, path)
     return {"image_path": path}
 
