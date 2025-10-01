@@ -26,26 +26,29 @@ def chat(prompt: str, model: str = "deepseek-r1:8b"):
     return {"response": response}
 
 @router.post("/generate_image/")
-def generate_image(prompt:str, image_width: int = 512, image_height: int = 512, image_steps: int = 4, guidance_scale: float = 7.0):
+def generate_image(prompt:str, image_width: int = 512, image_height: int = 512, image_steps: int = 4, guidance_scale: float = 7.0, ai_image_model: str = "sdxl-turbo"):
     from main import file_path
-    from ai_image_generator_module.sdxl_turbo import SDXLTurbo
+    from ai_image_generator_module.ai_image_service import AIImageService
     path = file_path / "generated_image.png"
-    SDXLTurbo.text_to_image(prompt, path, width=image_width, height=image_height, steps=image_steps, guidance_scale=guidance_scale)
+    if ai_image_model == "sdxl-turbo":
+        AIImageService.sdxl_text_to_image(prompt, path, width=image_width, height=image_height, steps=image_steps, guidance_scale=guidance_scale)
+    else:
+        AIImageService.flux_text_to_image(prompt, path, width=image_width, height=image_height, steps=image_steps)
     return {"image_path": path}
 
 @router.post("/perform_action/")
-def perform_action(path: str, user_input: str, n: int = 10, delta_threshold: float = 3.0, think: bool = False, model: str = "deepseek-r1:8b", image_width: int = 512,
-                image_height: int = 512, image_steps: int = 4, guidance_scale: float = 7.0
-                   ):
+def perform_action(path: str, user_input: str, n: int = 10, delta_threshold: float = 3.0, think: bool = False, ai_text_model: str = "deepseek-r1:8b",
+        ai_image_model: str = "sdxl-turbo", image_width: int = 512, image_height: int = 512, image_steps: int = 4, guidance_scale: float = 7.0):
+    
     action = OllamaChatService.select_action(user_input, think = think)
     if "1" in action:
         return __change_item_color(path, user_input, n, delta_threshold, think)
     elif "2" in action:
         return __change_background_color(path)
     elif "3" in action:
-        return generate_image(user_input, image_width=image_width, image_height=image_height, image_steps=image_steps, guidance_scale=guidance_scale)
+        return generate_image(user_input, image_width=image_width, image_height=image_height, image_steps=image_steps, guidance_scale=guidance_scale, ai_image_model=ai_image_model)
     elif "4" in action:
-        return chat(user_input, model)
+        return chat(user_input, ai_text_model)
     else:
         return {"response": "Invalid user input. Please try again."}
 

@@ -40,10 +40,6 @@ def get_image_service() -> ImageProcessingService:
 app = FastAPI(lifespan=lifespan)
 app.include_router(ai_assistant.router)
 
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
-
 @app.get("/tmp_folder_path/")
 def read_item():
     print("Tmp dir:", tmp_dir)
