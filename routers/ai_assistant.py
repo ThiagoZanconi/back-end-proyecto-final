@@ -1,5 +1,6 @@
 from typing import List
 from fastapi import APIRouter
+import uuid
 import numpy as np
 from ai_assistant_module.ollama_chat_service import OllamaChatService
 from image_processing_module.image_processing_service import ImageProcessingService
@@ -21,20 +22,21 @@ def change_colors(path: str, user_input: str, n: int = 10, delta_threshold: floa
     }
 
 @router.post("/chat/")
-def chat(prompt: str, model: str = "deepseek-r1:8b"):
-    response = OllamaChatService.chat(prompt, model)
+def chat(prompt: str, model: str = "deepseek-r1:8b", think = False, temperature:float = 0.2, top_k:float = 8.0, top_p: float = 0.4):
+    response = OllamaChatService.chat(prompt, model, think, temperature, top_k, top_p)
     return {"response": response}
 
 @router.post("/generate_image/")
 def generate_image(prompt:str, image_width: int = 512, image_height: int = 512, image_steps: int = 4, guidance_scale: float = 7.0, ai_image_model: str = "sdxl-turbo"):
     from main import file_path
     from ai_image_generator_module.ai_image_service import AIImageService
-    path = file_path / "generated_image.png"
+    filename = f"{uuid.uuid4()}.png"
+    path = file_path / filename
     if ai_image_model == "sdxl-turbo":
         AIImageService.sdxl_text_to_image(prompt, path, width=image_width, height=image_height, steps=image_steps, guidance_scale=guidance_scale)
     else:
         AIImageService.flux_text_to_image(prompt, path, width=image_width, height=image_height, steps=image_steps)
-    return {"image_path": path}
+    return {"filename": filename}
 
 @router.post("/perform_action/")
 def perform_action(path: str, user_input: str, n: int = 10, delta_threshold: float = 3.0, think: bool = False, ai_text_model: str = "deepseek-r1:8b",
