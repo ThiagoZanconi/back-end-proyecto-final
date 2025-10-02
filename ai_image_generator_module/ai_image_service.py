@@ -1,5 +1,7 @@
 from diffusers import AutoPipelineForText2Image
 from diffusers import FluxPipeline
+from ai_image_generator_module.flux_1_schnell import Flux1Schnell
+
 import torch
 
 class AIImageService:
@@ -28,21 +30,11 @@ class AIImageService:
 
 
     @staticmethod
-    def flux_text_to_image(prompt: str, path: str, width: int = 512, height: int = 512, steps: int = 4):
-        save_path = "./SavedModels/Schnell"
-        pipeline = FluxPipeline.from_pretrained(save_path, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True)
-        pipeline.enable_sequential_cpu_offload()
-        pipeline.enable_attention_slicing("max")
-        pipeline.enable_vae_slicing()
+    def flux_text_to_image():
+        schnell = Flux1Schnell()
+        schnell.get_image(
+            "Two goldens retriever dogs running inside a house",
+            "dogs_2.png",
+        )
 
-        image = pipeline(
-            prompt,
-            guidance_scale=0.0,
-            output_type="pil",
-            num_inference_steps=steps,
-            height=height,
-            width=width,
-            max_sequence_length=512,
-            generator=torch.Generator("cpu").manual_seed(0),
-        ).images[0]
-        image.save(path)
+        

@@ -5,10 +5,6 @@ load_dotenv()
 
 import torch
 
-from huggingface_hub import login
-
-login(token=os.getenv("API_KEY"))
-
 from diffusers import FluxPipeline
 
 # Settings
@@ -16,10 +12,10 @@ class Config:
     torch_dtype: str = os.getenv("TORCH_DTYPE")
     low_cpu_mem_usage: bool = os.getenv("LOW_CPU_MEM_USAGE")
     cpu_offload: bool = os.getenv("CPU_OFFLOAD")
-    num_inference_steps: int = int(os.getenv("NUM_INFERENCE_STEPS"))
-    image_height: int = int(os.getenv("IMAGE_HEIGHT"))
-    image_width: int = int(os.getenv("IMAGE_WIDTH"))
-    max_sequence_length: int = int(os.getenv("MAX_SEQUENCE_LENGTH"))
+    num_inference_steps: int = 4
+    image_height: int = 512
+    image_width: int = 512
+    max_sequence_length: int = 512
 
 config = Config()
 

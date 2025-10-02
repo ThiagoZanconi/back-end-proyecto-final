@@ -1,16 +1,11 @@
-from ai_image_generator_module.flux_1_schnell import Flux1Schnell
-from ai_image_generator_module.flux_1_dev import Flux1Dev
-
+from flux_1_schnell import Flux1Schnell
 
 if __name__ == "__main__":
 
     schnell = Flux1Schnell()
-    # dev = Flux1Dev()
-    # dev.save_model()
-
     schnell.get_image(
-        "Breathtaking natural landscape, featuring a majestic amazonian waterfall cascading into a crystal-clear pool, surrounded by lush, vibrant greenery and exotic wildlife, in the style of a high-resolution digital painting",
-        "natural_landscape_7",
+        "Two goldens retriever dogs running inside a treehouse",
+        "dogs_3.png",
     )
 
 
