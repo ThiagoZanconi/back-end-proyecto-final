@@ -38,9 +38,10 @@ def generate_image(prompt:str, image_width: int = 512, image_height: int = 512, 
 
 @router.post("/perform_action/")
 def perform_action(path: str, user_input: str, n: int = 10, delta_threshold: float = 3.0, think: bool = False, ai_text_model: str = "deepseek-r1:8b",
-        ai_image_model: str = "sdxl-turbo", image_width: int = 512, image_height: int = 512, image_steps: int = 4, guidance_scale: float = 7.0):
+        ai_image_model: str = "sdxl-turbo", image_width: int = 512, image_height: int = 512, image_steps: int = 4, guidance_scale: float = 7.0, 
+        temperature:float = 0.2, top_k:float = 8.0, top_p: float = 0.4):
     
-    action = OllamaChatService.select_action(user_input, think = think)
+    action = OllamaChatService.select_action(user_input, think = think, temperature=temperature, top_k=top_k, top_p=top_p)
     if "1" in action:
         return __change_item_color(path, user_input, n, delta_threshold, think)
     elif "2" in action:
@@ -48,7 +49,7 @@ def perform_action(path: str, user_input: str, n: int = 10, delta_threshold: flo
     elif "3" in action:
         return generate_image(user_input, image_width=image_width, image_height=image_height, image_steps=image_steps, guidance_scale=guidance_scale, ai_image_model=ai_image_model)
     elif "4" in action:
-        return chat(user_input, ai_text_model)
+        return chat(user_input, ai_text_model, temperature=temperature, top_k=top_k, top_p=top_p)
     else:
         return {"response": "Invalid user input. Please try again."}
 

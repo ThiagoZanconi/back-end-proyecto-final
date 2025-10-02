@@ -6,7 +6,8 @@ from ai_assistant_module.prompt_service import PromptService
 class OllamaChatService:
 
     @staticmethod
-    def chat(prompt: str, model: str = "deepseek-r1:8b", think = False) -> str:
+    def chat(prompt: str, model: str = "deepseek-r1:8b", think = False, temperature:float = 0.2, top_k:float = 8.0, top_p: float = 0.4) -> str:
+        print(f"Using model: {model}, think: {think}, temperature: {temperature}, top_k: {top_k}, top_p: {top_p}")
         messages = [
             {
                 "role": "user", 
@@ -20,9 +21,9 @@ class OllamaChatService:
             stream=True,
             think=think,
             options={
-                "temperature": 0.2,      # más bajo = más determinista
-                "top_k": 8,              # restringe a los k tokens más probables
-                "top_p": 0.4,            # nucleus sampling
+                "temperature": temperature,      # más bajo = más determinista
+                "top_k": top_k,              # restringe a los k tokens más probables
+                "top_p": top_p,            # nucleus sampling
             }
         )
 
@@ -46,9 +47,9 @@ class OllamaChatService:
         return OllamaChatService.chat(prompt, model, think)
     
     @staticmethod
-    def select_action(user_input: str, model: str = "deepseek-r1:8b", think = False) -> str:
+    def select_action(user_input: str, model: str = "deepseek-r1:8b", think = False, temperature:float = 0.2, top_k:float = 8.0, top_p: float = 0.4) -> str:
         prompt = PromptService.select_action_prompt(user_input)
-        return OllamaChatService.chat(prompt, model, think)
+        return OllamaChatService.chat(prompt, model, think, temperature, top_k, top_p)
     
     @staticmethod
     def get_item(user_input: str, model: str = "deepseek-r1:8b", think = False) -> str:
