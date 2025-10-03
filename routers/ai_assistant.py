@@ -35,7 +35,7 @@ def generate_image(prompt:str, image_width: int = 512, image_height: int = 512, 
     if ai_image_model == "sdxl-turbo":
         AIImageService.sdxl_text_to_image(prompt, path, width=image_width, height=image_height, steps=image_steps, guidance_scale=guidance_scale)
     else:
-        AIImageService.flux_text_to_image(prompt, path, width=image_width, height=image_height, steps=image_steps)
+        AIImageService.flux_text_to_image(prompt, path)
     return {"filename": filename}
 
 @router.post("/perform_action/")

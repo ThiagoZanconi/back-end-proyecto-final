@@ -1,6 +1,6 @@
 from diffusers import AutoPipelineForText2Image
 from diffusers import FluxPipeline
-from ai_image_generator_module.flux_1_schnell import Flux1Schnell
+from ai_image_generator_module.model import Flux1Schnell
 
 import torch
 
@@ -30,11 +30,8 @@ class AIImageService:
 
 
     @staticmethod
-    def flux_text_to_image():
+    def flux_text_to_image(prompt: str, file_name: str):
         schnell = Flux1Schnell()
-        schnell.get_image(
-            "Two goldens retriever dogs running inside a house",
-            "dogs_2.png",
-        )
+        schnell.get_image(prompt, file_name)
 
         
