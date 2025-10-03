@@ -15,10 +15,11 @@ class FluxModel:
     def load_model(self):
         if self.pipeline is None: 
             self.pipeline = FluxPipeline.from_pretrained(
-                self.save_path,
-                torch_dtype=torch.float16,
-                low_cpu_mem_usage=False,
-            )
+            self.name,
+            torch_dtype=torch.float16,  
+            low_cpu_mem_usage=False,
+        )
+
             self.pipeline.enable_sequential_cpu_offload()
             self.pipeline.enable_attention_slicing("max")
             self.pipeline.enable_vae_slicing()
@@ -33,7 +34,7 @@ class FluxModel:
             num_inference_steps=steps,
             height=height,
             width=width,
-            max_sequence_length=512,
+            max_sequence_length=256,
             generator=torch.Generator("cpu").manual_seed(0),
         ).images[0]
         save_path = Path(path).with_suffix(".png")
@@ -49,6 +50,6 @@ class Flux1Schnell(FluxModel):
 if __name__ == "__main__":
     schnell = Flux1Schnell()
     schnell.get_image(
-        "A green squirrlel in a magical forest fighting against a bear. Both are wearing medieval armor and holding swords.",
-        "Images/fight4",
+        "A purple squirrlel in a magical forest fighting against a bear. Both are wearing medieval armor and holding swords.",
+        "Images/fight5",
     )
