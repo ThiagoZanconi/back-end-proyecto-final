@@ -23,7 +23,7 @@ async def lifespan(app: FastAPI):
     print(f"📂 Carpeta temporal creada: {tmp_dir}")
 
     # crear instancia del service ya con tmp_dir correcto
-    image_processing_service = ImageProcessingService(tmp_dir)
+    image_processing_service = ImageProcessingService(file_path)
 
     yield  # <-- Aquí corre la API mientras está viva
 
@@ -69,9 +69,10 @@ def resize_image(path: str, new_h:int, new_w:int):
     return {"msg": "Image enlarged correctly"}
 
 @app.post("/remove_background/")
-def remove_background(path: str):
-    image_processing_service.remove_background(path)
-    return {"msg": "Fondo removido correctamente"}
+def remove_background(filename: str, delta_threshold = 3):
+    new_filename = image_processing_service.remove_background(filename, delta_threshold = delta_threshold)
+    return {"msg": "Fondo removido correctamente",
+            "filename": new_filename}
 
 @app.post("/extract_border/")
 def extract_border(path: str):

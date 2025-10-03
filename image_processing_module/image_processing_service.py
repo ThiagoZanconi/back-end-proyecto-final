@@ -1,4 +1,6 @@
+import uuid
 from numpy.typing import NDArray
+from pathlib import Path
 from PIL import Image
 import numpy as np
 from typing import List, Tuple
@@ -6,8 +8,8 @@ from image_processing_module.color_utils import ColorUtils
 from image_processing_module.matrix_color_service import MatrixColorService
 
 class ImageProcessingService:
-    def __init__(self, tmp_path:str):
-        self.tmp_path = tmp_path
+    def __init__(self, path: Path):
+        self.path = path
         self.undo_stack: List[str] = []
         self.redo_stack: List[str] = []
         self.current:str = ""
@@ -35,8 +37,8 @@ class ImageProcessingService:
         self.current = action
         return action
 
-    def remove_background(self, path: str):
-        matrix_color_service = self.__instanciate_matrix_color_service(path)
+    def remove_background(self, filename: str, delta_threshold = 3):
+        matrix_color_service = self.__instanciate_matrix_color_service(filename, delta_threshold = delta_threshold)
         lab_matrix = matrix_color_service.remover_fondo()
         rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(lab_matrix)
         self.__save_image(rgb_matrix)
@@ -63,12 +65,12 @@ class ImageProcessingService:
         color_list:List[np.uint8] = matrix_color_service.get_main_different_colors(n, delta_threshold)
         return ColorUtils.lab_color_list_to_rgb(color_list)
 
-    def __instanciate_matrix_color_service(self, path: str) -> MatrixColorService:
-        rgb_matrix = self.__get_rgb_matrix(path)
+    def __instanciate_matrix_color_service(self, filename: str, delta_threshold = 3) -> MatrixColorService:
+        rgb_matrix = self.__get_rgb_matrix(self.path / filename)
         lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(rgb_matrix)
-        return MatrixColorService(lab_matrix, delta_threshold = 6)
+        return MatrixColorService(lab_matrix, delta_threshold = delta_threshold)
 
-    def __get_rgb_matrix(self, path: str) -> NDArray[np.uint8]:
+    def __get_rgb_matrix(self, path: Path) -> NDArray[np.uint8]:
         image = Image.open(path).convert("RGB")  # Asegura que sea RGB
         return np.array(image)
     
@@ -94,6 +96,5 @@ class ImageProcessingService:
     
     def __save_image(self, rgb_matrix: NDArray[np.uint8]):
         imagen = Image.fromarray(rgb_matrix, 'RGB')
-        print("Tmp path: ",self.tmp_path)
-        ruta = self.tmp_path+"/imagen.png"
-        imagen.save(ruta)
+        filename = f"{uuid.uuid4()}.png"
+        imagen.save(self.path / filename)
