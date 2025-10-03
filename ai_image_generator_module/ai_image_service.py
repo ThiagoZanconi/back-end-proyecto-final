@@ -30,8 +30,8 @@ class AIImageService:
 
 
     @staticmethod
-    def flux_text_to_image(prompt: str, file_name: str):
+    def flux_text_to_image(prompt: str, path: str, width: int = 512, height: int = 512, steps: int = 4):
         schnell = Flux1Schnell()
-        schnell.get_image(prompt, file_name)
+        schnell.get_image(prompt, path, width, height, steps)
 
         
