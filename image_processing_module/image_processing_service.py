@@ -10,38 +10,12 @@ from image_processing_module.matrix_color_service import MatrixColorService
 class ImageProcessingService:
     def __init__(self, path: Path):
         self.path = path
-        self.undo_stack: List[str] = []
-        self.redo_stack: List[str] = []
-        self.current:str = ""
 
-    def do(self, action):
-        self.undo_stack.append(action)
-        # Si se hace una acción nueva, se limpia el redo_stack
-        self.redo_stack.clear()
-
-    def undo(self):
-        if not self.undo_stack:
-            return None
-        
-        action = self.undo_stack.pop()
-        self.redo_stack.append(action)
-        self.current = action
-        return action
-
-    def redo(self):
-        if not self.redo_stack:
-            return None
-        
-        action = self.redo_stack.pop()
-        self.undo_stack.append(action)
-        self.current = action
-        return action
-
-    def remove_background(self, filename: str, delta_threshold = 3):
+    def remove_background(self, filename: str, delta_threshold = 3) -> str:
         matrix_color_service = self.__instanciate_matrix_color_service(filename, delta_threshold = delta_threshold)
         lab_matrix = matrix_color_service.remover_fondo()
         rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(lab_matrix)
-        self.__save_image(rgb_matrix)
+        return self.__save_image(rgb_matrix)
 
     def resize_image(self, path: str, nuevo_tamaño: Tuple[int, int]):
         rgb_matrix = self.__get_rgb_matrix(path)
@@ -94,7 +68,8 @@ class ImageProcessingService:
 
         return resampled
     
-    def __save_image(self, rgb_matrix: NDArray[np.uint8]):
+    def __save_image(self, rgb_matrix: NDArray[np.uint8]) -> str:
         imagen = Image.fromarray(rgb_matrix, 'RGB')
         filename = f"{uuid.uuid4()}.png"
         imagen.save(self.path / filename)
+        return filename

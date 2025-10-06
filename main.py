@@ -4,6 +4,7 @@ from pathlib import Path
 import shutil
 import tempfile
 from typing import List
+from PIL import UnidentifiedImageError
 from fastapi import FastAPI, HTTPException
 import numpy as np
 from image_processing_module.image_processing_service import ImageProcessingService
@@ -14,6 +15,7 @@ from routers import ai_assistant
 file_path = Path(__file__).parent.parent / "front-end-proyecto-final" / "image-editor" / "public" 
 
 image_processing_service: ImageProcessingService | None = None
+tmp_files: List[str] = []
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -27,7 +29,7 @@ async def lifespan(app: FastAPI):
 
     yield  # <-- Aquí corre la API mientras está viva
 
-    # 🔹 Se ejecuta al apagar la API
+    __delete_tmp_files()
     if tmp_dir and os.path.exists(tmp_dir):
         shutil.rmtree(tmp_dir)
         print(f"🗑️ Carpeta temporal eliminada: {tmp_dir}")
@@ -53,26 +55,32 @@ def most_different_colors(path: str, n: int = 10, delta_threshold: float = 3):
         colors_list.append([int(c[0]), int(c[1]), int(c[2])])
     return {"colors": colors_list}
 
-@app.post("/undo/")
-def undo():
-    image_processing_service.undo()
-    return {"msg": "Undo succesful"}
-
-@app.post("/redo/")
-def redo():
-    image_processing_service.redo()
-    return {"msg": "Redo succesful"}
-
 @app.post("/resize_image/")
 def resize_image(path: str, new_h:int, new_w:int):
     image_processing_service.resize_image(path, (new_h, new_w))
     return {"msg": "Image enlarged correctly"}
 
 @app.post("/remove_background/")
-def remove_background(filename: str, delta_threshold = 3):
-    new_filename = image_processing_service.remove_background(filename, delta_threshold = delta_threshold)
-    return {"msg": "Fondo removido correctamente",
-            "filename": new_filename}
+def remove_background(filename: str, delta_threshold: int = 3):
+    print("Received filename:", filename)
+    try:
+        new_filename = image_processing_service.remove_background(filename, delta_threshold=delta_threshold)
+
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"No se encontró el archivo '{filename}'.")
+
+    except UnidentifiedImageError:
+        raise HTTPException(status_code=400, detail=f"El archivo '{filename}' no es una imagen válida o está dañado.")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error inesperado al procesar la imagen: {str(e)}")
+    
+    __delete_old_file(filename)
+    tmp_files.append(new_filename)
+    return {
+        "msg": "Fondo removido correctamente",
+        "filename": new_filename
+    }
 
 @app.post("/extract_border/")
 def extract_border(path: str):
@@ -98,3 +106,26 @@ def change_gamma_colors(path: str, req: GammaRequest, delta_threshold: float = 3
         )
     image_processing_service.change_gamma_colors(path, req.color, req.delta, delta_threshold)
     return {"msg": "Image enlarged correctly"}
+
+def __delete_old_file(filename: str):
+    file_path = image_processing_service.path / filename
+    try:
+        if file_path.exists():
+            file_path.unlink()
+            print(f"Archivo antiguo '{filename}' eliminado.")
+        else:
+            print(f"El archivo '{filename}' no existe, no se puede eliminar.")
+    except Exception as e:
+        print(f"Error al eliminar el archivo '{filename}': {str(e)}")
+
+def __delete_tmp_files():
+    for filename in tmp_files:
+        file_path = image_processing_service.path / filename
+        try:
+            if file_path.exists():
+                file_path.unlink()
+                print(f"Archivo temporal '{filename}' eliminado.")
+            else:
+                print(f"El archivo temporal '{filename}' no existe, no se puede eliminar.")
+        except Exception as e:
+            print(f"Error al eliminar el archivo temporal '{filename}': {str(e)}")
