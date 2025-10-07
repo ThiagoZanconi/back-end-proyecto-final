@@ -56,9 +56,12 @@ def most_different_colors(path: str, n: int = 10, delta_threshold: float = 3):
     return {"colors": colors_list}
 
 @app.post("/resize_image/")
-def resize_image(path: str, new_h:int, new_w:int):
-    image_processing_service.resize_image(path, (new_h, new_w))
-    return {"msg": "Image enlarged correctly"}
+def resize_image(filename: str, new_h:int, new_w:int):
+    new_filename = image_processing_service.resize_image(filename, (new_h, new_w))
+    __delete_old_file(filename)
+    tmp_files.append(new_filename)
+    return {"msg": "Image enlarged correctly",
+        "filename": new_filename}
 
 @app.post("/remove_background/")
 def remove_background(filename: str, delta_threshold: int = 3):

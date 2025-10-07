@@ -17,10 +17,10 @@ class ImageProcessingService:
         rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(lab_matrix)
         return self.__save_image(rgb_matrix)
 
-    def resize_image(self, path: str, nuevo_tamaño: Tuple[int, int]):
-        rgb_matrix = self.__get_rgb_matrix(path)
+    def resize_image(self, filename: str, nuevo_tamaño: Tuple[int, int]) -> str:
+        rgb_matrix = self.__get_rgb_matrix(self.path / filename)
         reduced = self.__resize_image(rgb_matrix, nuevo_tamaño)
-        self.__save_image(reduced)
+        return self.__save_image(reduced)
 
     def extract_border(self, path: str):
         matrix_color_service = self.__instanciate_matrix_color_service(path)

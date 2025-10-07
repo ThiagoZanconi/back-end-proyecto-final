@@ -207,11 +207,11 @@ class MatrixColorService:
         print(f"Tiempo de ejecución: {end_delta - start:.6f} segundos")
         self.__connect_borders()
         self.__fill_gaps()
-        connected_sets = self.__conjuntos_conectados()
+        connected_sets = self.__connected_sets()
         self.__keep_bigger_sets(connected_sets)
-        self.__tapar_picos_negros()
         #self.__pulir_shape()
-        self.__extraer_borde()
+        #self.__tapar_picos_negros()
+        self.__extract_border()
         end = time.perf_counter()
         print(f"Tiempo de ejecución: {end - start:.6f} segundos")
     
@@ -330,7 +330,7 @@ class MatrixColorService:
                 self.boolean_matrix_shape[i,j] = False
                 self.shape_set.discard((i,j))
 
-    def __extraer_borde(self):
+    def __extract_border(self):
         for i in range(self.height):
             for j in range(self.width):
                 adyacentes = [(i, j + 1), (i + 1, j + 1), (i + 1, j), (i + 1, j - 1), (i, j - 1), (i - 1, j - 1), (i - 1, j), (i - 1, j + 1)]
@@ -341,7 +341,7 @@ class MatrixColorService:
                     else:
                         self.background_set.add((i,j))
     
-    def __conjuntos_conectados(self) -> List[ConjuntoConectado]:
+    def __connected_sets(self) -> List[ConjuntoConectado]:
         toReturn: List[ConjuntoConectado] = []
         matrix_copy = self.boolean_matrix_shape.copy()
         for i in range(self.height):
@@ -352,14 +352,14 @@ class MatrixColorService:
                     conected_set:ConjuntoConectado = ConjuntoConectado({p},p,p)
                     while p_queue:
                         p = p_queue.popleft()
-                        i,j = p
-                        if(i<self.height and j<self.width and matrix_copy[i,j]):
-                            matrix_copy[i,j] = False
+                        ii,jj = p
+                        if(ii<self.height and jj<self.width and matrix_copy[ii,jj]):
+                            matrix_copy[ii,jj] = False
                             conected_set.set.add(p)
-                            p_queue.append((i+1,j))
-                            p_queue.append((i,j+1))
-                            p_queue.append((i,j-1))
-                            p_queue.append((i-1,j))
+                            p_queue.append((ii+1,jj))
+                            p_queue.append((ii,jj+1))
+                            p_queue.append((ii,jj-1))
+                            p_queue.append((ii-1,jj))
                     toReturn.append(conected_set)
         toReturn = sorted(toReturn, key=lambda cc: len(cc.set), reverse=True)
         return toReturn
