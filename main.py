@@ -19,7 +19,7 @@ tmp_files: List[str] = []
 async def lifespan(app: FastAPI):
     global image_processing_service
     image_processing_service = ImageProcessingService(file_path)
-    __start_ollama()
+    #__start_ollama()
 
     yield  # <-- Aquí corre la API mientras está viva
 
@@ -73,8 +73,13 @@ def remove_background(filename: str, delta_threshold: int = 3):
 
 @app.post("/extract_border/")
 def extract_border(filename: str):
-    image_processing_service.extract_border(filename)
-    return {"msg": "Image enlarged correctly"}
+    new_filename = image_processing_service.extract_border(filename)
+    __delete_old_file(filename)
+    tmp_files.append(new_filename)
+    return {
+        "msg": "Border extracted correctly",
+        "filename": new_filename
+    }
 
 @app.post("/change_gamma_colors/")
 def change_gamma_colors(filename: str, req: GammaRequest, delta_threshold: float = 3.0):
@@ -96,7 +101,10 @@ def change_gamma_colors(filename: str, req: GammaRequest, delta_threshold: float
     new_filename = image_processing_service.change_gamma_colors(filename, req.color, req.new_color, delta_threshold)
     __delete_old_file(filename)
     tmp_files.append(new_filename)
-    return {"msg": "Image enlarged correctly"}
+    return {
+        "msg": "Gamma colors changed correctly",
+        "filename": new_filename
+    }
 
 def __delete_old_file(filename: str):
     file_path = image_processing_service.path / filename

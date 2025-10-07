@@ -22,17 +22,17 @@ class ImageProcessingService:
         reduced = self.__resize_image(rgb_matrix, nuevo_tamaño)
         return self.__save_image(reduced)
 
-    def extract_border(self, path: str):
-        matrix_color_service = self.__instanciate_matrix_color_service(path)
+    def extract_border(self, filename: str) -> str:
+        matrix_color_service = self.__instanciate_matrix_color_service(self.path / filename)
         lab_matrix_border = matrix_color_service.border()
         rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(lab_matrix_border)
-        self.__save_image(rgb_matrix)
+        return self.__save_image(rgb_matrix)
 
-    def change_gamma_colors(self, path: str, color: List[int], delta: List[int], delta_threshold: float = 3.0):
-        matrix_color_service = self.__instanciate_matrix_color_service(path)
-        lab_matrix = matrix_color_service.change_gamma_colors(color, delta, delta_threshold)
+    def change_gamma_colors(self, filename: str, color: List[int], new_color: List[int], delta_threshold: float = 3.0) -> str:
+        matrix_color_service = self.__instanciate_matrix_color_service(self.path / filename)
+        lab_matrix = matrix_color_service.change_gamma_colors(color, new_color, delta_threshold)
         rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(lab_matrix)
-        self.__save_image(rgb_matrix)
+        return self.__save_image(rgb_matrix)
 
     def get_main_different_colors_rgb(self, path: str, n=10, delta_threshold: float = 3.0) -> List[np.uint8]:
         matrix_color_service = self.__instanciate_matrix_color_service(path)

@@ -158,9 +158,10 @@ class MatrixColorService:
                 break
         return main_different_colors
     
-    def change_gamma_colors(self, color: List[int], delta: List[int], delta_threshold: float = 3.0) -> NDArray[np.float64]:
+    def change_gamma_colors(self, color: List[int], new_color: List[int], delta_threshold: float = 3.0) -> NDArray[np.float64]:
         color_arr = np.array(color, dtype=np.float64)
-        delta_arr = np.array(delta, dtype=np.float64)
+        new_color_arr = np.array(new_color, dtype=np.float64)
+        delta_arr = new_color_arr - color_arr
         toReturn = self.matrix.copy()
         for i in range(self.height):
             for j in range(self.width):
