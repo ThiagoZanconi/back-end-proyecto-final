@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI):
     global image_processing_service
     image_processing_service = ImageProcessingService(file_path)
     #__start_ollama()
-
+    subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL)
     yield  # <-- Aquí corre la API mientras está viva
 
     __delete_tmp_files()
