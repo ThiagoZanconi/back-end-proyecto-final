@@ -18,6 +18,7 @@ class PromptService:
             f"Return only the color RGB code, nothing else.\n\n"
             f"The list of colors is: {color_list}\n"
             f"User input: {user_input}"
+            f"DO NOT THINK STEP BY STEP, JUST RETURN THE COLOR RGB CODE"
         )
     
     @staticmethod
@@ -28,6 +29,7 @@ class PromptService:
             f"Return only the color RGB code, nothing else.\n\n"
             f"Return only the color RGB code in numbers NOT HEX\n\n"
             f"User input: {user_input}"
+            f"DO NOT THINK STEP BY STEP, JUST RETURN THE COLOR RGB CODE IN TUPLE OF NUMBERS"
         )
     
     @staticmethod

@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
+import shutil
 from typing import List
 from PIL import UnidentifiedImageError
 from dotenv import load_dotenv
@@ -12,9 +13,7 @@ import subprocess
 
 #tmp_dir: str|None = None  # global para guardar la ruta
 file_path = Path(__file__).parent.parent / "front-end-proyecto-final" / "image-editor" / "public" 
-
 image_processing_service: ImageProcessingService | None = None
-tmp_files: List[str] = []
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -23,7 +22,6 @@ async def lifespan(app: FastAPI):
     image_processing_service = ImageProcessingService(file_path)
     subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL)
     yield  # <-- Aquí corre la API mientras está viva
-
     __delete_tmp_files()
 
 def get_image_service() -> ImageProcessingService:
@@ -46,7 +44,6 @@ def most_different_colors(filename: str, n: int = 10, delta_threshold: float = 3
 def resize_image(filename: str, new_h:int, new_w:int):
     new_filename = image_processing_service.resize_image(filename, (new_h, new_w))
     __delete_old_file(filename)
-    tmp_files.append(new_filename)
     return {"msg": "Image enlarged correctly",
         "filename": new_filename}
 
@@ -66,7 +63,6 @@ def remove_background(filename: str, delta_threshold: int = 3):
         raise HTTPException(status_code=500, detail=f"Error inesperado al procesar la imagen: {str(e)}")
     
     __delete_old_file(filename)
-    tmp_files.append(new_filename)
     return {
         "msg": "Fondo removido correctamente",
         "filename": new_filename
@@ -76,7 +72,6 @@ def remove_background(filename: str, delta_threshold: int = 3):
 def extract_border(filename: str):
     new_filename = image_processing_service.extract_border(filename)
     __delete_old_file(filename)
-    tmp_files.append(new_filename)
     return {
         "msg": "Border extracted correctly",
         "filename": new_filename
@@ -101,10 +96,19 @@ def change_gamma_colors(filename: str, req: GammaRequest, delta_threshold: float
         )
     new_filename = image_processing_service.change_gamma_colors(filename, req.color, req.new_color, delta_threshold)
     __delete_old_file(filename)
-    tmp_files.append(new_filename)
     return {
         "msg": "Gamma colors changed correctly",
         "filename": new_filename
+    }
+
+@app.get("/get_color/")
+def get_color(filename: str, x: int, y: int):
+    try:
+        color = image_processing_service.get_color(filename, x, y)
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    return {
+        "color": [int(color[0]), int(color[1]), int(color[2])]
     }
 
 def __delete_old_file(filename: str):
@@ -119,13 +123,22 @@ def __delete_old_file(filename: str):
         print(f"Error al eliminar el archivo '{filename}': {str(e)}")
 
 def __delete_tmp_files():
-    for filename in tmp_files:
-        file_path = image_processing_service.path / filename
-        try:
-            if file_path.exists():
-                file_path.unlink()
-                print(f"Archivo temporal '{filename}' eliminado.")
-            else:
-                print(f"El archivo temporal '{filename}' no existe, no se puede eliminar.")
-        except Exception as e:
-            print(f"Error al eliminar el archivo temporal '{filename}': {str(e)}")
+    folder_path = image_processing_service.path
+
+    try:
+        if folder_path.exists() and folder_path.is_dir():
+            # Iterar sobre todos los elementos dentro de la carpeta
+            for item in folder_path.iterdir():
+                try:
+                    if item.is_file() or item.is_symlink():
+                        item.unlink()
+                    elif item.is_dir():
+                        shutil.rmtree(item)
+                except Exception as e:
+                    print(f"⚠️ No se pudo eliminar '{item}': {e}")
+
+            print(f"✅ Se eliminaron todos los archivos temporales en '{folder_path}'.")
+        else:
+            print(f"⚠️ La ruta '{folder_path}' no existe o no es un directorio.")
+    except Exception as e:
+        print(f"❌ Error al limpiar archivos temporales en '{folder_path}': {e}")

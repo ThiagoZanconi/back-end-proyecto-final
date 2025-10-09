@@ -28,7 +28,7 @@ class ImageProcessingService:
         rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(lab_matrix_border)
         return self.__save_image(rgb_matrix)
 
-    def change_gamma_colors(self, filename: str, color: List[int], new_color: List[int], delta_threshold: float = 3.0) -> str:
+    def change_gamma_colors(self, filename: str, color: List[float], new_color: List[float], delta_threshold: float = 3.0) -> str:
         matrix_color_service = self.__instanciate_matrix_color_service(filename, delta_threshold=delta_threshold)
         lab_matrix = matrix_color_service.change_gamma_colors(color, new_color, delta_threshold)
         rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(lab_matrix)
@@ -38,6 +38,14 @@ class ImageProcessingService:
         matrix_color_service = self.__instanciate_matrix_color_service(filename, delta_threshold = delta_threshold)
         color_list:List[np.uint8] = matrix_color_service.get_main_different_colors(n, delta_threshold)
         return ColorUtils.lab_color_list_to_rgb(color_list)
+    
+    def get_color(self, filename: str, x: int, y: int) -> List[int]:
+        rgb_matrix = self.__get_rgb_matrix(self.path / filename)
+        height, width, rgb = rgb_matrix.shape
+        if x < 0 or x >= width or y < 0 or y >= height:
+            raise ValueError("Las coordenadas (x, y) están fuera de los límites de la imagen.")
+        color = rgb_matrix[y, x]
+        return [int(color[0]), int(color[1]), int(color[2])]
 
     def __instanciate_matrix_color_service(self, filename: str, delta_threshold = 3) -> MatrixColorService:
         rgb_matrix = self.__get_rgb_matrix(self.path / filename)
@@ -45,7 +53,7 @@ class ImageProcessingService:
         return MatrixColorService(lab_matrix, delta_threshold = delta_threshold)
 
     def __get_rgb_matrix(self, path: Path) -> NDArray[np.uint8]:
-        image = Image.open(path).convert("RGB")  # Asegura que sea RGB
+        image = Image.open(path).convert("RGB")
         return np.array(image)
     
     def __resize_image(self, original_matrix: NDArray[np.uint8], nuevo_tamaño: Tuple[int, int]) -> NDArray[np.uint8]:
