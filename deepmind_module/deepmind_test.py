@@ -3,7 +3,6 @@ import sys
 import requests
 
 API_KEY = os.getenv("DEEPMIND_API_KEY")  # pon tu key en la variable de entorno DEEPMIND_API_KEY
-API_KEY = "AIzaSyAEmvNfKMgim-5I3UMSda6RhpEkRDQqvJI"
 
 if not API_KEY:
     print("ERROR: define la variable de entorno DEEPMIND_API_KEY con tu API key.")
