@@ -52,8 +52,8 @@ class OllamaChatService:
         return OllamaChatService.chat(prompt, model, think, temperature, top_k, top_p)
     
     @staticmethod
-    def get_item(user_input: str, model: str = "deepseek-r1:8b", think = False) -> str:
-        prompt = PromptService.get_item_prompt(user_input)
+    def get_second_color(user_input: str, model: str = "deepseek-r1:8b", think = False) -> str:
+        prompt = PromptService.get_second_color_prompt(user_input)
         return OllamaChatService.chat(prompt, model, think)
     
     @staticmethod

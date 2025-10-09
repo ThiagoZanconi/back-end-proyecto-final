@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import List
 from PIL import UnidentifiedImageError
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 import numpy as np
 from image_processing_module.image_processing_service import ImageProcessingService
@@ -17,9 +18,9 @@ tmp_files: List[str] = []
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    load_dotenv()
     global image_processing_service
     image_processing_service = ImageProcessingService(file_path)
-    #__start_ollama()
     subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL)
     yield  # <-- Aquí corre la API mientras está viva
 
@@ -128,11 +129,3 @@ def __delete_tmp_files():
                 print(f"El archivo temporal '{filename}' no existe, no se puede eliminar.")
         except Exception as e:
             print(f"Error al eliminar el archivo temporal '{filename}': {str(e)}")
-
-def __start_ollama():
-    try:
-        subprocess.run(["ollama", "list"], check=True, capture_output=True)
-        print("✅ Ollama ya está en ejecución.")
-    except subprocess.CalledProcessError:
-        print("🚀 Iniciando Ollama...")
-        subprocess.Popen(["ollama", "serve"])

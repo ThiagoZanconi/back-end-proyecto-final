@@ -3,8 +3,8 @@ from typing import List, Tuple
 class PromptService:
 
     ACTION_LIST = [
-        "1: Change item color",
-        "2: Change background color",
+        "1: Change color",
+        "2: Not implemented",
         "3: Generate image",
         "4: General chat",
         "5: Other"
@@ -14,17 +14,19 @@ class PromptService:
     def change_color_prompt(user_input: str, color_list: List[Tuple[int,int,int]]) -> str:
         return (
             f"You will be given a list of RGB colors and a user input.\n"
-            f"Your task is to return the color from the list that best matches the user input.\n"
+            f"Your task is to return the color from the list that best matches the FIRST color mentioned by the user.\n"
             f"Return only the color RGB code, nothing else.\n\n"
             f"The list of colors is: {color_list}\n"
             f"User input: {user_input}"
         )
     
     @staticmethod
-    def get_item_prompt(user_input: str) -> str:
+    def get_second_color_prompt(user_input: str) -> str:
         return (
-            "You are an assistant that extracts the main item from a user's input.\n"
-            "Return only the name of the item, nothing else.\n\n"
+            f"You will be given a user input.\n"
+            f"Your task is to return the RGB color code that best matches the LAST color mentioned by the user.\n"
+            f"Return only the color RGB code, nothing else.\n\n"
+            f"Return only the color RGB code in numbers NOT HEX\n\n"
             f"User input: {user_input}"
         )
     
