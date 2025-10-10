@@ -79,21 +79,12 @@ def extract_border(filename: str):
 
 @app.post("/change_gamma_colors/")
 def change_gamma_colors(filename: str, req: GammaRequest, delta_threshold: float = 3.0):
-    if req.color[0] < 0 or req.color[0] > 100:
-        raise HTTPException(
-            status_code=422,
-            detail="El valor L debe estar entre 0 y 100"
-        )
-    if req.color[1] < -128 or req.color[1] > 128:
-        raise HTTPException(
-            status_code=422,
-            detail="El valor a debe estar entre -128 y 128"
-        )
-    if req.color[2] < -128 or req.color[2] > 128:
-        raise HTTPException(
-            status_code=422,
-            detail="El valor b debe estar entre -128 y 128"
-        )
+    for i in range(3):
+        if req.new_color[i] < 0 or req.new_color[i] > 255:
+            raise HTTPException(
+                status_code=422,
+                detail="Los valores deben estar entre 0 y 255"
+            )
     new_filename = image_processing_service.change_gamma_colors(filename, req.color, req.new_color, delta_threshold)
     __delete_old_file(filename)
     return {

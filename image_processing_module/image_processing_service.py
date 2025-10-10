@@ -30,7 +30,9 @@ class ImageProcessingService:
 
     def change_gamma_colors(self, filename: str, color: List[float], new_color: List[float], delta_threshold: float = 3.0) -> str:
         matrix_color_service = self.__instanciate_matrix_color_service(filename, delta_threshold=delta_threshold)
-        lab_matrix = matrix_color_service.change_gamma_colors(color, new_color, delta_threshold)
+        lab_color1 = ColorUtils.rgb_to_lab(np.array(color, dtype=np.uint8))
+        lab_color2 = ColorUtils.rgb_to_lab(np.array(new_color, dtype=np.uint8))
+        lab_matrix = matrix_color_service.change_gamma_colors(lab_color1, lab_color2, delta_threshold)
         rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(lab_matrix)
         return self.__save_image(rgb_matrix)
 
