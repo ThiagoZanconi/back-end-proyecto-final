@@ -48,6 +48,15 @@ def generate_image(prompt:str, image_width: int = 512, image_height: int = 512, 
         AIImageService.gemini_text_to_image(prompt, path)
     return {"filename": filename}
 
+@router.post("/image_to_image/")
+def image_to_image(filename: str, user_input: str):
+    from main import file_path
+    from ai_image_generator_module.ai_image_service import AIImageService
+    new_filename = f"{uuid.uuid4()}.png"
+    path = file_path / new_filename
+    AIImageService.gemini_image_to_image(user_input, path, file_path / filename)
+    return {"filename": new_filename}
+
 @router.post("/perform_action/")
 def perform_action(filename: str, user_input: str, n: int = 10, delta_threshold: float = 3.0, think: bool = False, ai_text_model: str = "deepseek-r1:8b",
         ai_image_model: str = "sdxl-turbo", image_width: int = 512, image_height: int = 512, image_steps: int = 4, guidance_scale: float = 7.0, 
@@ -62,6 +71,8 @@ def perform_action(filename: str, user_input: str, n: int = 10, delta_threshold:
         return generate_image(user_input, image_width=image_width, image_height=image_height, image_steps=image_steps, guidance_scale=guidance_scale, ai_image_model=ai_image_model)
     elif "4" in action:
         return chat(user_input, ai_text_model, temperature=temperature, top_k=top_k, top_p=top_p)
+    elif "5" in action:
+        return image_to_image(filename, user_input)
     else:
         return {"response": "Invalid user input. Please try again."}
 
