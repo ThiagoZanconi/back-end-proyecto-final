@@ -4,7 +4,7 @@ class PromptService:
 
     ACTION_LIST = [
         "1: Change color",
-        "2: Change Background Color",
+        "2: Change Background",
         "3: Generate image",
         "4: General chat",
         "5: Modify Image",
