@@ -68,6 +68,20 @@ class ColorUtils:
         j = heapq.heappop(delta_columns_pq)[1]
 
         return (i,j)
+    
+    @staticmethod
+    def remove_background(original_matrix: NDArray[np.uint8], background_set: set[Tuple[int,int]]) -> NDArray[np.uint8]:
+        try:
+            h, w, _ = original_matrix.shape
+            # Crear una matriz RGBA (h, w, 4) con el mismo contenido RGB y alfa=255
+            rgba_matrix = np.dstack((original_matrix, np.full((h, w), 255, dtype=np.uint8)))
+            for i,j in background_set:
+                # Establecer alfa a 0 (transparente)
+                rgba_matrix[i, j, 3] = 0  
+            return rgba_matrix
+        except Exception as e:
+            print(f"Error in remove_background: {e}")
+            raise e
 
     @staticmethod
     def transform_matrix_from_rgb_to_lab(original_matrix: NDArray[np.uint8]) -> NDArray[np.float64]:
@@ -77,6 +91,7 @@ class ColorUtils:
         lab_matrix: NDArray[np.float64] = rgb2lab(rgb_normalized)
         return lab_matrix
     
+    @staticmethod
     def transform_matrix_from_lab_lo_rgb(original_matrix:NDArray[np.float64]) -> NDArray[np.uint8]:
         # Convertir de Lab a RGB (valores en [0, 1])
         rgb_normalized = lab2rgb(original_matrix)

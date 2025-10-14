@@ -43,7 +43,6 @@ def most_different_colors(filename: str, n: int = 10, delta_threshold: float = 3
 @app.post("/resize_image/")
 def resize_image(filename: str, new_h:int, new_w:int):
     new_filename = image_processing_service.resize_image(filename, (new_h, new_w))
-    __delete_old_file(filename)
     return {"msg": "Image enlarged correctly",
         "filename": new_filename}
 
@@ -62,7 +61,6 @@ def remove_background(filename: str, delta_threshold: int = 3):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error inesperado al procesar la imagen: {str(e)}")
     
-    __delete_old_file(filename)
     return {
         "msg": "Fondo removido correctamente",
         "filename": new_filename
@@ -71,7 +69,6 @@ def remove_background(filename: str, delta_threshold: int = 3):
 @app.post("/extract_border/")
 def extract_border(filename: str):
     new_filename = image_processing_service.extract_border(filename)
-    __delete_old_file(filename)
     return {
         "msg": "Border extracted correctly",
         "filename": new_filename
@@ -86,7 +83,6 @@ def change_gamma_colors(filename: str, req: GammaRequest, delta_threshold: float
                 detail="Los valores deben estar entre 0 y 255"
             )
     new_filename = image_processing_service.change_gamma_colors(filename, req.color, req.new_color, delta_threshold)
-    __delete_old_file(filename)
     return {
         "msg": "Gamma colors changed correctly",
         "filename": new_filename

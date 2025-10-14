@@ -12,21 +12,21 @@ class ImageProcessingService:
         self.path = path
 
     def remove_background(self, filename: str, delta_threshold = 3) -> str:
+        rgb_matrix = self.__get_rgb_matrix(self.path / filename)
         matrix_color_service = self.__instanciate_matrix_color_service(filename, delta_threshold = delta_threshold)
-        lab_matrix = matrix_color_service.remover_fondo()
-        rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(lab_matrix)
-        return self.__save_image(rgb_matrix)
+        rgba_matrix = ColorUtils.remove_background(rgb_matrix, matrix_color_service.background_set)
+        return self.__save_image_rgba(rgba_matrix)
 
     def resize_image(self, filename: str, nuevo_tamaño: Tuple[int, int]) -> str:
         rgb_matrix = self.__get_rgb_matrix(self.path / filename)
         reduced = self.__resize_image(rgb_matrix, nuevo_tamaño)
-        return self.__save_image(reduced)
+        return self.__save_image_rgb(reduced)
 
     def extract_border(self, filename: str) -> str:
         matrix_color_service = self.__instanciate_matrix_color_service(filename)
         lab_matrix_border = matrix_color_service.border()
         rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(lab_matrix_border)
-        return self.__save_image(rgb_matrix)
+        return self.__save_image_rgb(rgb_matrix)
 
     def change_gamma_colors(self, filename: str, color: List[float], new_color: List[float], delta_threshold: float = 3.0) -> str:
         matrix_color_service = self.__instanciate_matrix_color_service(filename, delta_threshold=delta_threshold)
@@ -34,7 +34,7 @@ class ImageProcessingService:
         lab_color2 = ColorUtils.rgb_to_lab(np.array(new_color, dtype=np.uint8))
         lab_matrix = matrix_color_service.change_gamma_colors(lab_color1, lab_color2, delta_threshold)
         rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(lab_matrix)
-        return self.__save_image(rgb_matrix)
+        return self.__save_image_rgb(rgb_matrix)
 
     def get_main_different_colors_rgb(self, filename: str, n=10, delta_threshold: float = 3.0) -> List[np.uint8]:
         matrix_color_service = self.__instanciate_matrix_color_service(filename, delta_threshold = delta_threshold)
@@ -78,8 +78,14 @@ class ImageProcessingService:
 
         return resampled
     
-    def __save_image(self, rgb_matrix: NDArray[np.uint8]) -> str:
+    def __save_image_rgb(self, rgb_matrix: NDArray[np.uint8]) -> str:
         imagen = Image.fromarray(rgb_matrix, 'RGB')
+        filename = f"{uuid.uuid4()}.png"
+        imagen.save(self.path / filename)
+        return filename
+    
+    def __save_image_rgba(self, rgb_matrix: NDArray[np.uint8]) -> str:
+        imagen = Image.fromarray(rgb_matrix, 'RGBA')
         filename = f"{uuid.uuid4()}.png"
         imagen.save(self.path / filename)
         return filename
