@@ -64,10 +64,8 @@ class AIImageService:
         
         raise RuntimeError("No se encontró parte de imagen en la respuesta")
     
+    @staticmethod
     def gemini_image_to_image(prompt: str, output_path: str, image_path: str):
-        """
-        Edita una imagen local usando la API de Gemini a partir de un prompt.
-        """
         api_key = os.getenv("DEEPMIND_API_KEY")
         if not api_key:
             raise RuntimeError("Definí la variable DEEPMIND_API_KEY con tu API Key")
