@@ -7,11 +7,11 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 import numpy as np
 from image_processing_module.image_processing_service import ImageProcessingService
+from request_types.color_to_remove import ColorToRemove
 from request_types.gamma_request import GammaRequest
 from routers import ai_assistant
 import subprocess
 
-#tmp_dir: str|None = None  # global para guardar la ruta
 file_path = Path(__file__).parent.parent / "front-end-proyecto-final" / "image-editor" / "public" 
 image_processing_service: ImageProcessingService | None = None
 
@@ -74,6 +74,20 @@ def extract_border(filename: str):
         "filename": new_filename
     }
 
+@app.post("/remove_color/")
+def remove_color(filename: str, color_to_remove: ColorToRemove, delta_threshold: float = 3.0):
+    for i in range(3):
+        if color_to_remove.color[i] < 0 or color_to_remove.color[i] > 255:
+            raise HTTPException(
+                status_code=422,
+                detail="Los valores deben estar entre 0 y 255"
+            )
+    new_filename = image_processing_service.remove_color(filename, color_to_remove.color, delta_threshold)
+    return {
+        "msg": "Color removed correctly",
+        "filename": new_filename
+    }
+
 @app.post("/change_gamma_colors/")
 def change_gamma_colors(filename: str, req: GammaRequest, delta_threshold: float = 3.0):
     for i in range(3):
@@ -98,17 +112,6 @@ def get_color(filename: str, x: int, y: int):
         "color": [int(color[0]), int(color[1]), int(color[2])]
     }
 
-def __delete_old_file(filename: str):
-    file_path = image_processing_service.path / filename
-    try:
-        if file_path.exists():
-            file_path.unlink()
-            print(f"Archivo antiguo '{filename}' eliminado.")
-        else:
-            print(f"El archivo '{filename}' no existe, no se puede eliminar.")
-    except Exception as e:
-        print(f"Error al eliminar el archivo '{filename}': {str(e)}")
-
 def __delete_tmp_files():
     folder_path = image_processing_service.path
 
@@ -122,10 +125,10 @@ def __delete_tmp_files():
                     elif item.is_dir():
                         shutil.rmtree(item)
                 except Exception as e:
-                    print(f"⚠️ No se pudo eliminar '{item}': {e}")
+                    print(f"No se pudo eliminar '{item}': {e}")
 
-            print(f"✅ Se eliminaron todos los archivos temporales en '{folder_path}'.")
+            print(f"Se eliminaron todos los archivos temporales en '{folder_path}'.")
         else:
-            print(f"⚠️ La ruta '{folder_path}' no existe o no es un directorio.")
+            print(f"La ruta '{folder_path}' no existe o no es un directorio.")
     except Exception as e:
-        print(f"❌ Error al limpiar archivos temporales en '{folder_path}': {e}")
+        print(f"Error al limpiar archivos temporales en '{folder_path}': {e}")

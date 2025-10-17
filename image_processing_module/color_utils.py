@@ -70,7 +70,7 @@ class ColorUtils:
         return (i,j)
     
     @staticmethod
-    def remove_background(original_matrix: NDArray[np.uint8], background_set: set[Tuple[int,int]]) -> NDArray[np.uint8]:
+    def remove_point_set(original_matrix: NDArray[np.uint8], background_set: set[Tuple[int,int]]) -> NDArray[np.uint8]:
         try:
             h, w, _ = original_matrix.shape
             # Crear una matriz RGBA (h, w, 4) con el mismo contenido RGB y alfa=255

@@ -14,7 +14,7 @@ class ImageProcessingService:
     def remove_background(self, filename: str, delta_threshold = 3) -> str:
         rgb_matrix = self.__get_rgb_matrix(self.path / filename)
         matrix_color_service = self.__instanciate_matrix_color_service(filename, delta_threshold = delta_threshold)
-        rgba_matrix = ColorUtils.remove_background(rgb_matrix, matrix_color_service.background_set)
+        rgba_matrix = ColorUtils.remove_point_set(rgb_matrix, matrix_color_service.background_set)
         return self.__save_image_rgba(rgba_matrix)
 
     def resize_image(self, filename: str, nuevo_tamaño: Tuple[int, int]) -> str:
@@ -27,6 +27,13 @@ class ImageProcessingService:
         lab_matrix_border = matrix_color_service.border()
         rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(lab_matrix_border)
         return self.__save_image_rgb(rgb_matrix)
+    
+    def remove_color(self, filename: str, color: List[float], delta_threshold: float = 3.0) -> str:
+        rgb_matrix = self.__get_rgb_matrix(self.path / filename)
+        matrix_color_service = self.__instanciate_matrix_color_service(filename, delta_threshold = delta_threshold)
+        set_to_remove: set[Tuple[int,int]] = matrix_color_service.get_point_set_from_color(color, delta_threshold)
+        rgba_matrix = ColorUtils.remove_point_set(rgb_matrix, set_to_remove)
+        return self.__save_image_rgba(rgba_matrix)
 
     def change_gamma_colors(self, filename: str, color: List[float], new_color: List[float], delta_threshold: float = 3.0) -> str:
         matrix_color_service = self.__instanciate_matrix_color_service(filename, delta_threshold=delta_threshold)

@@ -176,6 +176,15 @@ class MatrixColorService:
 
         return toReturn
     
+    def get_point_set_from_color(self, color: List[float], delta_threshold:float) -> set[Tuple[int,int]]:
+        color_arr = np.array(color, dtype=np.float64)
+        point_set: set[Tuple[int,int]] = set()
+        for i in range(self.height):
+            for j in range(self.width):
+                if (ColorUtils.delta_ciede2000(color_arr, self.matrix[i,j]) <= delta_threshold):
+                    point_set.add((i,j))
+        return point_set
+    
     def __delta_pq(self, points: set[Tuple[int,int]]) -> List[Tuple[float, Tuple[Tuple[int,int],Tuple[int,int]]]]:
         delta_pq: List[Tuple[float, Tuple[Tuple[int,int],Tuple[int,int]]]] = []
         for i, j in points:
