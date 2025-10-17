@@ -31,7 +31,8 @@ class ImageProcessingService:
     def remove_color(self, filename: str, color: List[float], delta_threshold: float = 3.0) -> str:
         rgb_matrix = self.__get_rgb_matrix(self.path / filename)
         matrix_color_service = self.__instanciate_matrix_color_service(filename, delta_threshold = delta_threshold)
-        set_to_remove: set[Tuple[int,int]] = matrix_color_service.get_point_set_from_color(color, delta_threshold)
+        lab_color = ColorUtils.rgb_to_lab(np.array(color, dtype=np.uint8))
+        set_to_remove: set[Tuple[int,int]] = matrix_color_service.get_point_set_from_color(lab_color, delta_threshold)
         rgba_matrix = ColorUtils.remove_point_set(rgb_matrix, set_to_remove)
         return self.__save_image_rgba(rgba_matrix)
 

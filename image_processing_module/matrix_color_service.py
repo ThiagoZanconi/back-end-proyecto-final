@@ -165,7 +165,9 @@ class MatrixColorService:
         toReturn = self.matrix.copy()
         for i in range(self.height):
             for j in range(self.width):
-                if (ColorUtils.delta_ciede2000(color_arr, self.matrix[i,j]) <= delta_threshold):
+                delta = np.linalg.norm(self.matrix[i, j] - color_arr)
+                #delta = ColorUtils.delta_ciede2000(color_arr, self.matrix[i,j])
+                if (delta <= delta_threshold):
                     new_val = self.matrix[i, j] + delta_arr
 
                     new_val[0] = np.clip(new_val[0], 0, 100)      # L
@@ -181,7 +183,9 @@ class MatrixColorService:
         point_set: set[Tuple[int,int]] = set()
         for i in range(self.height):
             for j in range(self.width):
-                if (ColorUtils.delta_ciede2000(color_arr, self.matrix[i,j]) <= delta_threshold):
+                delta = np.linalg.norm(self.matrix[i, j] - color_arr)
+                #delta = ColorUtils.delta_ciede2000(color_arr, self.matrix[i,j])
+                if (delta <= delta_threshold):
                     point_set.add((i,j))
         return point_set
     
