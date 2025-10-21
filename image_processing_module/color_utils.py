@@ -70,12 +70,12 @@ class ColorUtils:
         return (i,j)
     
     @staticmethod
-    def remove_point_set(original_matrix: NDArray[np.uint8], background_set: set[Tuple[int,int]]) -> NDArray[np.uint8]:
+    def remove_point_set(matrix: NDArray[np.uint8], point_set: set[Tuple[int,int]]) -> NDArray[np.uint8]:
         try:
-            h, w, _ = original_matrix.shape
+            h, w, _ = matrix.shape
             # Crear una matriz RGBA (h, w, 4) con el mismo contenido RGB y alfa=255
-            rgba_matrix = np.dstack((original_matrix, np.full((h, w), 255, dtype=np.uint8)))
-            for i,j in background_set:
+            rgba_matrix = np.dstack((matrix, np.full((h, w), 255, dtype=np.uint8)))
+            for i,j in point_set:
                 # Establecer alfa a 0 (transparente)
                 rgba_matrix[i, j, 3] = 0  
             return rgba_matrix
@@ -84,17 +84,17 @@ class ColorUtils:
             raise e
 
     @staticmethod
-    def transform_matrix_from_rgb_to_lab(original_matrix: NDArray[np.uint8]) -> NDArray[np.float64]:
+    def matrix_from_rgb_to_lab(matrix: NDArray[np.uint8]) -> NDArray[np.float64]:
         # Normalizar RGB a [0,1]
-        rgb_normalized = original_matrix.astype(np.float64) / 255.0
+        rgb_normalized = matrix.astype(np.float64) / 255.0
         # Convertir toda la matriz de una vez (vectorizado)
         lab_matrix: NDArray[np.float64] = rgb2lab(rgb_normalized)
         return lab_matrix
     
     @staticmethod
-    def transform_matrix_from_lab_lo_rgb(original_matrix:NDArray[np.float64]) -> NDArray[np.uint8]:
+    def matrix_from_lab_lo_rgb(matrix:NDArray[np.float64]) -> NDArray[np.uint8]:
         # Convertir de Lab a RGB (valores en [0, 1])
-        rgb_normalized = lab2rgb(original_matrix)
+        rgb_normalized = lab2rgb(matrix)
 
         # Escalar a [0, 255] y convertir a uint8
         rgb_uint8 = (rgb_normalized * 255).clip(0, 255).astype(np.uint8)
@@ -102,7 +102,7 @@ class ColorUtils:
         return rgb_uint8
     
     @staticmethod
-    def lab_color_list_to_rgb(lab_color_list: List[np.uint8]) -> List[np.uint8]:
+    def lab_list_to_rgb(lab_color_list: List[np.uint8]) -> List[np.uint8]:
         rgb_color_list = []
         for lab in lab_color_list:
             lab_reshaped = np.array(lab, dtype=np.float64).reshape(1, 1, 3)

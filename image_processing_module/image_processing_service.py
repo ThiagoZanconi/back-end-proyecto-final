@@ -25,7 +25,7 @@ class ImageProcessingService:
     def extract_border(self, filename: str) -> str:
         matrix_color_service = self.__instanciate_matrix_color_service(filename)
         lab_matrix_border = matrix_color_service.border()
-        rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(lab_matrix_border)
+        rgb_matrix = ColorUtils.matrix_from_lab_lo_rgb(lab_matrix_border)
         return self.__save_image_rgb(rgb_matrix)
     
     def remove_color(self, filename: str, color: List[float], delta_threshold: float = 3.0) -> str:
@@ -41,13 +41,13 @@ class ImageProcessingService:
         lab_color1 = ColorUtils.rgb_to_lab(np.array(color, dtype=np.uint8))
         lab_color2 = ColorUtils.rgb_to_lab(np.array(new_color, dtype=np.uint8))
         lab_matrix = matrix_color_service.change_gamma_colors(lab_color1, lab_color2, delta_threshold)
-        rgb_matrix = ColorUtils.transform_matrix_from_lab_lo_rgb(lab_matrix)
+        rgb_matrix = ColorUtils.matrix_from_lab_lo_rgb(lab_matrix)
         return self.__save_image_rgb(rgb_matrix)
 
     def get_main_different_colors_rgb(self, filename: str, n=10, delta_threshold: float = 3.0) -> List[np.uint8]:
         matrix_color_service = self.__instanciate_matrix_color_service(filename, delta_threshold = delta_threshold)
         color_list:List[np.uint8] = matrix_color_service.get_main_different_colors(n, delta_threshold)
-        return ColorUtils.lab_color_list_to_rgb(color_list)
+        return ColorUtils.lab_list_to_rgb(color_list)
     
     def get_color(self, filename: str, x: int, y: int) -> List[int]:
         rgb_matrix = self.__get_rgb_matrix(self.path / filename)
@@ -59,7 +59,7 @@ class ImageProcessingService:
 
     def __instanciate_matrix_color_service(self, filename: str, delta_threshold = 3) -> MatrixColorService:
         rgb_matrix = self.__get_rgb_matrix(self.path / filename)
-        lab_matrix = ColorUtils.transform_matrix_from_rgb_to_lab(rgb_matrix)
+        lab_matrix = ColorUtils.matrix_from_rgb_to_lab(rgb_matrix)
         return MatrixColorService(lab_matrix, delta_threshold = delta_threshold)
 
     def __get_rgb_matrix(self, path: Path) -> NDArray[np.uint8]:

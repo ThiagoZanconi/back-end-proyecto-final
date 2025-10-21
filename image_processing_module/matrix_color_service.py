@@ -192,7 +192,7 @@ class MatrixColorService:
     def __delta_pq(self, points: set[Tuple[int,int]]) -> List[Tuple[float, Tuple[Tuple[int,int],Tuple[int,int]]]]:
         delta_pq: List[Tuple[float, Tuple[Tuple[int,int],Tuple[int,int]]]] = []
         for i, j in points:
-            delta_acum, max_vecino = self.__delta_vecinos((i,j))
+            delta_acum, max_vecino = self.__delta_neighbors((i,j))
             heapq.heappush(delta_pq, (-delta_acum, ((i,j),max_vecino)))
         return delta_pq
     
@@ -223,8 +223,6 @@ class MatrixColorService:
         self.__fill_gaps()
         connected_sets = self.__connected_sets()
         self.__keep_bigger_sets(connected_sets)
-        #self.__pulir_shape()
-        #self.__tapar_picos_negros()
         self.__extract_border()
         end = time.perf_counter()
         print(f"Tiempo de ejecución: {end - start:.6f} segundos")
@@ -232,12 +230,12 @@ class MatrixColorService:
     def __calculate_matrix_delta(self,threshold):
         for i in range(self.height):
             for j in range(self.width):
-                delta, _ = self.__delta_vecinos((i,j))
+                delta, _ = self.__delta_neighbors((i,j))
                 if delta>threshold:
                     self.boolean_matrix_shape[i,j] = True
                     self.shape_set.add((i,j))
         
-    def __delta_vecinos(self, p: Tuple[int, int]) -> Tuple[np.float64, Tuple[int,int]]:
+    def __delta_neighbors(self, p: Tuple[int, int]) -> Tuple[np.float64, Tuple[int,int]]:
         i, j = p
         max_vecino = (0,0)
         max_delta = 0.0
