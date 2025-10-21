@@ -20,7 +20,7 @@ class ConjuntoConectado:
     b: Tuple[int,int]
 
 class MatrixColorService:
-    def __init__(self, matrix: NDArray[np.float64], delta_threshold=8):
+    def __init__(self, matrix: NDArray[np.float64], threshold=8):
         self.height, self.width, lab = matrix.shape
         self.matrix = matrix
         self.boolean_matrix_shape = np.zeros((self.height, self.width), dtype=bool)
@@ -31,7 +31,7 @@ class MatrixColorService:
         self.background_colors = set()
         self.__color_counter = Counter()
         
-        self.__shape_matrix(delta_threshold)
+        self.__shape_matrix(threshold)
         for i in range(self.height):
             for j in range(self.width):
                 self.save_color(matrix[i][j])
@@ -146,11 +146,11 @@ class MatrixColorService:
         self.border_set = border_set
         return border_set
     
-    def get_main_different_colors(self, n=10, delta_threshold: float = 3.0) -> List[np.uint8]:
+    def get_main_different_colors(self, n=10, threshold: float = 3.0) -> List[np.uint8]:
         most_common, _ = self.__color_counter.most_common(1)[0]
         main_different_colors = [most_common]
         for color, _ in self.__color_counter.most_common():
-            es_diferente = all( ColorUtils.delta_ciede2000(color, c) > delta_threshold for c in main_different_colors )
+            es_diferente = all( ColorUtils.delta_ciede2000(color, c) > threshold for c in main_different_colors )
             if es_diferente:
                 main_different_colors.append(color)
 
@@ -158,7 +158,7 @@ class MatrixColorService:
                 break
         return main_different_colors
     
-    def change_gamma_colors(self, color: List[float], new_color: List[float], delta_threshold: float = 3.0) -> NDArray[np.float64]:
+    def change_gamma_colors(self, color: List[float], new_color: List[float], threshold: float = 3.0) -> NDArray[np.float64]:
         color_arr = np.array(color, dtype=np.float64)
         new_color_arr = np.array(new_color, dtype=np.float64)
         delta_arr = new_color_arr - color_arr
@@ -167,7 +167,7 @@ class MatrixColorService:
             for j in range(self.width):
                 delta = np.linalg.norm(self.matrix[i, j] - color_arr)
                 #delta = ColorUtils.delta_ciede2000(color_arr, self.matrix[i,j])
-                if (delta <= delta_threshold):
+                if (delta <= threshold):
                     new_val = self.matrix[i, j] + delta_arr
 
                     new_val[0] = np.clip(new_val[0], 0, 100)      # L
@@ -178,14 +178,14 @@ class MatrixColorService:
 
         return toReturn
     
-    def get_point_set_from_color(self, color: List[float], delta_threshold:float) -> set[Tuple[int,int]]:
+    def get_point_set_from_color(self, color: List[float], threshold:float) -> set[Tuple[int,int]]:
         color_arr = np.array(color, dtype=np.float64)
         point_set: set[Tuple[int,int]] = set()
         for i in range(self.height):
             for j in range(self.width):
                 delta = np.linalg.norm(self.matrix[i, j] - color_arr)
                 #delta = ColorUtils.delta_ciede2000(color_arr, self.matrix[i,j])
-                if (delta <= delta_threshold):
+                if (delta <= threshold):
                     point_set.add((i,j))
         return point_set
     
@@ -330,17 +330,6 @@ class MatrixColorService:
             self.boolean_matrix_shape[i, j] = True
             self.shape_set.add((i, j))
         self.background_set.update(background_group)
-    
-    def __pulir_shape(self):
-        for i in range(self.height):
-            for j in range(self.width):
-                if (i,j) not in self.shape_set:
-                    self.background_colors.add(tuple(self.matrix[i,j]))
-        copy = self.shape_set.copy()
-        for i, j in copy:
-            if (tuple(self.matrix[i,j]) in self.background_colors):
-                self.boolean_matrix_shape[i,j] = False
-                self.shape_set.discard((i,j))
 
     def __extract_border(self):
         for i in range(self.height):
@@ -380,6 +369,17 @@ class MatrixColorService:
         length = len(connected_sets)
         for n in range(n,length):
             for i,j in connected_sets[n].set:
+                self.boolean_matrix_shape[i,j] = False
+                self.shape_set.discard((i,j))
+
+    def __pulir_shape(self):
+        for i in range(self.height):
+            for j in range(self.width):
+                if (i,j) not in self.shape_set:
+                    self.background_colors.add(tuple(self.matrix[i,j]))
+        copy = self.shape_set.copy()
+        for i, j in copy:
+            if (tuple(self.matrix[i,j]) in self.background_colors):
                 self.boolean_matrix_shape[i,j] = False
                 self.shape_set.discard((i,j))
     

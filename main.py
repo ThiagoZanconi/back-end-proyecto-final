@@ -50,7 +50,7 @@ def resize_image(filename: str, new_h:int, new_w:int):
 def remove_background(filename: str, delta_threshold: int = 3):
     print("Received filename:", filename)
     try:
-        new_filename = image_processing_service.remove_background(filename, delta_threshold=delta_threshold)
+        new_filename = image_processing_service.remove_background(filename, threshold=delta_threshold)
 
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail=f"No se encontró el archivo '{filename}'.")

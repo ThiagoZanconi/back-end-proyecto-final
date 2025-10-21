@@ -99,7 +99,7 @@ def border_list(path:str)-> List[Tuple[int,int]]:
     matriz_1024x1024: NDArray[np.uint8] = np.array(sword_image)
     matriz_128 = reducir_imagen(matriz_1024x1024, (256, 256))
     lab_matrix = ColorUtils.matrix_from_rgb_to_lab(matriz_128)
-    matrix_color_service = MatrixColorService(lab_matrix, delta_threshold = 10)
+    matrix_color_service = MatrixColorService(lab_matrix, threshold = 10)
     return matrix_color_service.border_list()
 
 def graficar_segmentos(segmentos: List[Segment]):
@@ -239,7 +239,7 @@ sword_image = Image.open("resources/swords/pixel_sword_3.png").convert("RGB")  #
 matriz_1024x1024: NDArray[np.uint8] = np.array(sword_image)
 matriz_128 = reducir_imagen(matriz_1024x1024, (128, 128))
 lab_matrix = ColorUtils.matrix_from_rgb_to_lab(matriz_128)
-matrix_color_service = MatrixColorService(lab_matrix, delta_threshold = 10)
+matrix_color_service = MatrixColorService(lab_matrix, threshold = 10)
 resultado = matrix_color_service.find_sub_shape(25)
 
 
