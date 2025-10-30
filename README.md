@@ -33,10 +33,11 @@ API_KEY=tu_api_key_de_hugging_face
 # O para Gemini
 DEEPMIND_API_KEY=tu_api_key_de_gemini
 ```
-
+  
+* Nota: Si solo deseas utilizar la generacion de imagenes de Google en la nube a traves de DEEPMIND, puedes saltear el siguiente paso y seguir con el paso 5.
 ---
 
-## 🧠 Modelos de generación de imágenes
+## 🧠 4. Modelos de generación de imágenes locales
 
 Después de configurar la API key de Hugging Face, navega a la carpeta:
 
@@ -49,14 +50,14 @@ Y luego instala cada uno de los modelos que necesites, ejecutando los siguientes
 * `flux1-schnell_install.py`
 * `sdxl-turbo_install.py`
 
-Modelos actualmente soportados:
+Modelos locales actualmente soportados:
 
 * [`flux1-schnell`](https://huggingface.co/black-forest-labs/FLUX.1-schnell)
 * [`sdxl-turbo`](https://huggingface.co/stabilityai/sdxl-turbo)
 
 ---
 
-## 🤖 Instalación de Ollama
+## 🤖 5. Instalación de Ollama
 
 1. Descarga e instala [Ollama](https://ollama.com/download).
 2. Instala uno de los modelos soportados directamente desde Ollama:
