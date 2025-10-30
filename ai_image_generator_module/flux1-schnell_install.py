@@ -12,9 +12,9 @@ login(token=os.getenv("API_KEY"))
 
 from diffusers import AutoPipelineForText2Image
 
-# "black-forest-labs/FLUX.1-schnell"
+torch_dtype=os.getenv("TORCH_DTYPE")
 
-pipeline = AutoPipelineForText2Image.from_pretrained("stabilityai/sdxl-turbo", torch_dtype=torch.bfloat16)
+pipeline = AutoPipelineForText2Image.from_pretrained("black-forest-labs/FLUX.1-schnell", torch_dtype)
 pipeline.save_pretrained("./SavedModels/sdxl-turbo")
 
 
