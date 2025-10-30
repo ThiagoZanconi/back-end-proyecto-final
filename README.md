@@ -1,6 +1,6 @@
 # 🌄 Image editor back-end
 
-Este proyecto utiliza modelos de lenguaje e inteligencia artificial para **predecir tendencias del mercado bursátil** y generar visualizaciones o imágenes relacionadas mediante distintos backends de IA.
+Este proyecto utiliza modelos de lenguaje e inteligencia artificial para generar y/o editar imagenes.
 
 ---
 
