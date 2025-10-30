@@ -1,4 +1,4 @@
-# 📈 Stock Market Prediction
+# 🌄 Image editor back-end
 
 Este proyecto utiliza modelos de lenguaje e inteligencia artificial para **predecir tendencias del mercado bursátil** y generar visualizaciones o imágenes relacionadas mediante distintos backends de IA.
 
@@ -83,13 +83,5 @@ setx OLLAMA_MODELS "D:\.Ollama\models" /M
 ```bash
 export OLLAMA_MODELS="D:\.Ollama\models"
 ```
-
----
-
-## 📄 Licencia
-
-Este proyecto se distribuye bajo la licencia [MIT](LICENSE).
-
----
 
 **Desarrollado con ❤️ y Python 3.11**
