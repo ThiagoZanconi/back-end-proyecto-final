@@ -9,15 +9,24 @@ import re
 router = APIRouter(prefix="/ai_assistant", tags=["AI Assistant"])
 
 @router.post("/change_colors/")
-def change_color(filename: str, user_input: str, n: int = 10, delta_threshold: float = 3.0, think: bool = False):
+def change_color(filename: str, user_input: str, model: str = "deepseek-r1:8b",n: int = 10, delta_threshold: float = 3.0, think: bool = False):
     from main import get_image_service
     image_processing_service: ImageProcessingService = get_image_service()
     colors: List[np.ndarray] = image_processing_service.get_main_different_colors_rgb(filename, n, delta_threshold)
     colors_list = []
     for c in colors:
         colors_list.append([int(c[0]), int(c[1]), int(c[2])])
-    first_color = OllamaChatService.change_item_color(user_input, colors_list, think = think)
-    second_color = OllamaChatService.get_second_color(user_input, think = think)
+
+    first_color: str = ""
+    second_color: str = ""
+
+    if model == "gemini-1.5-flash":
+        from ai_assistant_module.gemini_chat_service import GeminiChatService
+        first_color = GeminiChatService.change_item_color(user_input, colors_list)
+        second_color = GeminiChatService.get_second_color(user_input)
+    else:
+        first_color = OllamaChatService.change_item_color(user_input, colors_list, think = think)
+        second_color = OllamaChatService.get_second_color(user_input, think = think)
     print(f"First color: {first_color}, Second color: {second_color}")
 
     first_color_List = list(map(int, re.findall(r"-?\d+", first_color)))
@@ -31,7 +40,12 @@ def change_color(filename: str, user_input: str, n: int = 10, delta_threshold: f
 
 @router.post("/chat/")
 def chat(prompt: str, model: str = "deepseek-r1:8b", think = False, temperature:float = 0.2, top_k:float = 8.0, top_p: float = 0.4):
-    response = OllamaChatService.chat(prompt, model, think, temperature, top_k, top_p)
+    response: str = ""
+    if model == "gemini-1.5-flash":
+        from ai_assistant_module.gemini_chat_service import GeminiChatService
+        response = GeminiChatService.chat(prompt, temperature=temperature, top_k=top_k, top_p=top_p)
+    else:
+        response = OllamaChatService.chat(prompt, model, think, temperature, top_k, top_p)
     return {"response": response}
 
 @router.post("/generate_image/")
@@ -62,7 +76,12 @@ def perform_action(filename: str, user_input: str, n: int = 10, delta_threshold:
         ai_image_model: str = "sdxl-turbo", image_width: int = 512, image_height: int = 512, image_steps: int = 4, guidance_scale: float = 7.0, 
         temperature:float = 0.2, top_k:float = 8.0, top_p: float = 0.4):
     
-    action = OllamaChatService.select_action(user_input, think = think, temperature=temperature, top_k=top_k, top_p=top_p)
+    action: str = ""
+    if ai_text_model == "gemini-1.5-flash":
+        from ai_assistant_module.gemini_chat_service import GeminiChatService
+        action = GeminiChatService.select_action(user_input, temperature=temperature, top_k=top_k, top_p=top_p)
+    else:
+        action = OllamaChatService.select_action(user_input, think = think, temperature=temperature, top_k=top_k, top_p=top_p)
     if "1" in action:
         return change_color(filename, user_input, n, delta_threshold, think)
     elif "2" in action:
