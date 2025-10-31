@@ -1,12 +1,14 @@
 # 🌄 Image editor back-end
 
-Este proyecto utiliza modelos de lenguaje e inteligencia artificial para **predecir tendencias del mercado bursátil** y generar visualizaciones o imágenes relacionadas mediante distintos backends de IA.
+Este repositorio contiene el back-end de nuestra aplicacion de generación y edición de imágenes. El front-end se puede encontrar aqui: https://github.com/ThiagoZanconi/front-end-proyecto-final  
+  
+Este módulo consiste de una API Python, implementada con FastAPI, que integra otros tres submódulos (algorítmico, IA texto, IA imágenes) para implementar los endpoints que utiliza el front-end para proveer la lógica de las distintas funciones disponibles para el usuario en la interfaz.
 
 ---
 
 ## 🚀 Uso
 
-### 1. Crear entorno virtual con Python 3.11.0
+### 1. Crear entorno virtual con Python 3.11.0 o 3.12.0
 
 ```bash
 python -m venv .venv
@@ -31,25 +33,31 @@ API_KEY=tu_api_key_de_hugging_face
 # O para Gemini
 DEEPMIND_API_KEY=tu_api_key_de_gemini
 ```
-
+  
+* Nota: Si solo deseas utilizar la generacion de imagenes de Google en la nube a traves de DEEPMIND, puedes saltear el siguiente paso y seguir con el paso 5.
 ---
 
-## 🧠 Modelos de generación de imágenes
+## 🧠 4. Modelos de generación de imágenes locales
 
-Después de configurar la API key de Hugging Face, puedes instalar los modelos disponibles ejecutando los archivos correspondientes en el módulo:
+Después de configurar la API key de Hugging Face, navega a la carpeta:
 
 ```bash
 cd ai_image_generator_module
 ```
 
-Modelos soportados:
+Y luego instala cada uno de los modelos que necesites, ejecutando los siguientes archivos .py:
 
-* `flux1-schnell`
-* `sdxl-turbo`
+* `flux1-schnell_install.py`
+* `sdxl-turbo_install.py`
+
+Modelos locales actualmente soportados:
+
+* [`flux1-schnell`](https://huggingface.co/black-forest-labs/FLUX.1-schnell)
+* [`sdxl-turbo`](https://huggingface.co/stabilityai/sdxl-turbo)
 
 ---
 
-## 🤖 Instalación de Ollama
+## 🤖 5. Instalación de Ollama
 
 1. Descarga e instala [Ollama](https://ollama.com/download).
 2. Instala uno de los modelos soportados directamente desde Ollama:
@@ -84,4 +92,10 @@ setx OLLAMA_MODELS "D:\.Ollama\models" /M
 export OLLAMA_MODELS="D:\.Ollama\models"
 ```
 
+## CUDA + PyTorch
+
+Si tienes problemas al utilizar los CUDA cores, o recibes errores de PyTorch, dirigete a este link y descarga la version estable de PyTorch que se corresponde con tu equipo:
+
+https://pytorch.org/get-started/locally/  
+  
 **Desarrollado con ❤️ y Python 3.11**
