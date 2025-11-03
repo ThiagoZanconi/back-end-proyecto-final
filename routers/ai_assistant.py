@@ -7,6 +7,7 @@ from image_processing_module.image_processing_service import ImageProcessingServ
 import re
 
 router = APIRouter(prefix="/ai_assistant", tags=["AI Assistant"])
+MODEL_GEMINI = "gemini-2.5-flash"
 
 @router.post("/change_colors/")
 def change_color(filename: str, user_input: str, model: str = "deepseek-r1:8b",n: int = 10, delta_threshold: float = 3.0, think: bool = False):
@@ -20,7 +21,7 @@ def change_color(filename: str, user_input: str, model: str = "deepseek-r1:8b",n
     first_color: str = ""
     second_color: str = ""
 
-    if model == "gemini-1.5-flash":
+    if model == MODEL_GEMINI:
         from ai_assistant_module.gemini_chat_service import GeminiChatService
         first_color = GeminiChatService.change_item_color(user_input, colors_list)
         second_color = GeminiChatService.get_second_color(user_input)
@@ -41,7 +42,7 @@ def change_color(filename: str, user_input: str, model: str = "deepseek-r1:8b",n
 @router.post("/chat/")
 def chat(prompt: str, model: str = "deepseek-r1:8b", think = False, temperature:float = 0.2, top_k:float = 8.0, top_p: float = 0.4):
     response: str = ""
-    if model == "gemini-1.5-flash":
+    if model == MODEL_GEMINI:
         from ai_assistant_module.gemini_chat_service import GeminiChatService
         response = GeminiChatService.chat(prompt, temperature=temperature, top_k=top_k, top_p=top_p)
     else:
@@ -77,7 +78,7 @@ def perform_action(filename: str, user_input: str, n: int = 10, delta_threshold:
         temperature:float = 0.2, top_k:float = 8.0, top_p: float = 0.4):
     
     action: str = ""
-    if ai_text_model == "gemini-1.5-flash":
+    if ai_text_model == MODEL_GEMINI:
         from ai_assistant_module.gemini_chat_service import GeminiChatService
         action = GeminiChatService.select_action(user_input, temperature=temperature, top_k=top_k, top_p=top_p)
     else:
