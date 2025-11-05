@@ -16,7 +16,7 @@ class AIImageService:
         pipe = DiffusionPipeline.from_pretrained("./ai_image_generator_module/SavedModels/sdxl-turbo").to("cuda")
         results = pipe(
             prompt=prompt,
-            num_inference_steps=2,
+            num_inference_steps=steps,
             guidance_scale=0.0,
             width=width,
             height=height
