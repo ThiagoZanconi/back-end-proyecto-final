@@ -1,6 +1,6 @@
 # 🇬🇧 English
 
-# 🌄 Image editor back-end
+# 🌄 IMAGEIO - AI IMAGE EDITOR Back-End
 
 This repository contains the back-end of our image generation and editing application.
 The front-end can be found here: https://github.com/ThiagoZanconi/front-end-proyecto-final
@@ -113,7 +113,7 @@ https://pytorch.org/get-started/locally/
 
 # 🇪🇸 Español
 
-# 🌄 Image editor back-end
+# 🌄 IMAGEIO - AI IMAGE EDITOR Back-End
 
 Este repositorio contiene el back-end de nuestra aplicacion de generación y edición de imágenes. El front-end se puede encontrar aqui: https://github.com/ThiagoZanconi/front-end-proyecto-final  
   
