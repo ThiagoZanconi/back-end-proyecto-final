@@ -121,7 +121,7 @@ Este módulo consiste de una API Python, implementada con FastAPI, que integra o
 
 ---
 
-## 🚀 Instalación
+## 🛠️ Instalación
 
 ### 1. Crear entorno virtual con Python 3.11.0 o 3.12.0
 
@@ -188,6 +188,16 @@ ollama run deepseek-r1:8b
 ```
 
 *(Solo es necesario ejecutarlos una vez; Ollama descargará el modelo automáticamente.)*
+
+---
+
+## 🚀 Ejecutar
+
+Una vez que todo esta instalado, navega hasta la carpeta raíz del proyecto y ejecuta el programa usando el siguiente comando:
+
+```bash
+fastapi dev main.py
+```
 
 ---
 
